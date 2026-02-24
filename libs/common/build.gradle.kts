@@ -16,3 +16,7 @@ dependencies {
 tasks.test {
     useJUnitPlatform()
 }
+
+dependencies {
+    implementation("org.bouncycastle:bcprov-jdk18on:1.83")
+}

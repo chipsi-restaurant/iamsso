@@ -1,4 +1,4 @@
-package org.iamsso.authservice
+package org.iamsso.services.authservice
 
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication

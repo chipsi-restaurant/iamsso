@@ -7,7 +7,7 @@ plugins {
 
 group = "org.iamsso.services"
 version = "0.0.1-SNAPSHOT"
-description = "auth-service"
+description = "user-service"
 
 java {
     toolchain {

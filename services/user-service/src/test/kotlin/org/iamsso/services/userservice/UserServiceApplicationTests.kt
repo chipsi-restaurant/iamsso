@@ -1,10 +1,10 @@
-package org.iamsso.authservice
+package org.iamsso.services.userservice
 
 import org.junit.jupiter.api.Test
 import org.springframework.boot.test.context.SpringBootTest
 
 @SpringBootTest
-class AuthServiceApplicationTests {
+class UserServiceApplicationTests {
 
     @Test
     fun contextLoads() {
