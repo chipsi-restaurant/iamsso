@@ -1,0 +1,21 @@
+spring:
+  datasource:
+    url: "jdbc:h2:mem:testdb;INIT=CREATE SCHEMA IF NOT EXISTS iamsso_auth;MODE=PostgreSQL;DB_CLOSE_DELAY=-1"
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    database-platform: org.hibernate.dialect.H2Dialect
+    properties:
+      hibernate:
+        default_schema: iamsso_auth
+  liquibase:
+    enabled: false
+  kafka:
+    bootstrap-servers: ""
+  data:
+    redis:
+      host: localhost
+      port: 6379

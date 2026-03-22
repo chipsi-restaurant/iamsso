@@ -20,9 +20,37 @@ repositories {
 }
 
 dependencies {
+    // Spring Boot
+    implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+    implementation("org.springframework.boot:spring-boot-starter-data-redis")
+    implementation("org.springframework.boot:spring-boot-starter-security")
+    implementation("org.springframework.boot:spring-boot-starter-validation")
+    implementation("org.springframework.boot:spring-boot-starter-actuator")
+    implementation("org.springframework.boot:spring-boot-starter-liquibase")
+    implementation("org.springframework.boot:spring-boot-starter-kafka")
     implementation("org.springframework.boot:spring-boot-starter")
+    implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
+
+    // Kotlin
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
+
+    // JWT
+    implementation("com.nimbusds:nimbus-jose-jwt:10.0.2")
+
+    // ── ГОСТ (BouncyCastle) ──
+    implementation("org.bouncycastle:bcprov-jdk18on:1.80")
+    implementation("org.bouncycastle:bcpkix-jdk18on:1.80")
+
+    // DB
+    runtimeOnly("org.postgresql:postgresql")
+
+    implementation(project(":libs:contracts"))
+
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("org.springframework.security:spring-security-test")
+    testRuntimeOnly("com.h2database:h2")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
