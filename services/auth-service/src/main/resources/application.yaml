@@ -1,1 +1,72 @@
-spring.application.name=auth-service
+spring:
+  application:
+    name: auth-service
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/iamsso_auth
+    username: app
+    password: app
+    hikari:
+      maximum-pool-size: 20
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        default_schema: iamsso_auth
+        jdbc.time_zone: UTC
+
+  liquibase:
+    enabled: true
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+    liquibase-schema: public
+    default-schema: iamsso_auth
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all
+    consumer:
+      group-id: auth-service
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "org.iamsso.contracts.events"
+        spring.json.value.default.type: "org.iamsso.contracts.events.CloudEventEnvelope"
+
+server:
+  port: 8080
+
+app:
+  issuer: http://localhost:8080
+  jwt:
+    standard:
+      algorithm: RS256
+      key-id: standard-key-1
+    gost:
+      enabled: false
+      key-id: gost-key-1
+  tokens:
+    authorization-code-ttl-seconds: 60
+    device-code-ttl-seconds: 600
+    device-code-polling-interval: 5
+  user-service:
+    base-url: http://localhost:8081
+  login-page:
+    url: http://localhost:3000
+  admin:
+    scope: iam:admin
+  sso-session:
+    ttl-seconds: 86400
+  authorization-request:
+    ttl-seconds: 300
