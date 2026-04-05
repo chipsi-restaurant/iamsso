@@ -1,0 +1,201 @@
+databaseChangeLog:
+  - changeSet:
+      id: 001-create-schema
+      author: Arseniy Kolyshkin
+      changes:
+        - sql:
+            sql: CREATE SCHEMA IF NOT EXISTS iamsso_auth
+
+  - changeSet:
+      id: 001-create-oauth-clients
+      author: Arseniy Kolyshkin
+      changes:
+        - createTable:
+            schemaName: iamsso_auth
+            tableName: oauth_clients
+            columns:
+              - column:
+                  name: client_id
+                  type: varchar(64)
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: client_name
+                  type: varchar(100)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: client_secret_hash
+                  type: varchar(500)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: previous_secret_hash
+                  type: varchar(500)
+              - column:
+                  name: previous_secret_expires_at
+                  type: timestamptz
+              - column:
+                  name: grant_types
+                  type: varchar(500)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: redirect_uris
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: scopes
+                  type: varchar(500)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: token_endpoint_auth_method
+                  type: varchar(30)
+                  defaultValue: client_secret_post
+              - column:
+                  name: access_token_ttl_seconds
+                  type: int
+                  defaultValueNumeric: 3600
+              - column:
+                  name: refresh_token_ttl_seconds
+                  type: int
+                  defaultValueNumeric: 2592000
+              - column:
+                  name: device_code_ttl_seconds
+                  type: int
+                  defaultValueNumeric: 600
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 001-create-refresh-tokens
+      author: Arseniy Kolyshkin
+      changes:
+        - createTable:
+            schemaName: iamsso_auth
+            tableName: refresh_tokens
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: token_hash
+                  type: varchar(500)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: user_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: client_id
+                  type: varchar(64)
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_rt_client
+                    references: iamsso_auth.oauth_clients(client_id)
+                    deleteCascade: true
+              - column:
+                  name: session_id
+                  type: uuid
+              - column:
+                  name: scopes
+                  type: varchar(500)
+              - column:
+                  name: revoked
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: replaced_by
+                  type: uuid
+              - column:
+                  name: expires_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - createIndex:
+            schemaName: iamsso_auth
+            tableName: refresh_tokens
+            indexName: idx_rt_user_id
+            columns:
+              - column: { name: user_id }
+        - createIndex:
+            schemaName: iamsso_auth
+            tableName: refresh_tokens
+            indexName: idx_rt_token_hash
+            columns:
+              - column: { name: token_hash }
+        - createIndex:
+            schemaName: iamsso_auth
+            tableName: refresh_tokens
+            indexName: idx_rt_session_id
+            columns:
+              - column: { name: session_id }
+
+  - changeSet:
+      id: 001-create-sso-sessions
+      author: Arseniy Kolyshkin
+      changes:
+        - createTable:
+            schemaName: iamsso_auth
+            tableName: sso_sessions
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: user_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: client_ids
+                  type: text
+              - column:
+                  name: ip
+                  type: varchar(50)
+              - column:
+                  name: user_agent
+                  type: varchar(500)
+              - column:
+                  name: expires_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+              - column:
+                  name: last_activity_at
+                  type: timestamptz
+                  defaultValueComputed: now()
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - createIndex:
+            schemaName: iamsso_auth
+            tableName: sso_sessions
+            indexName: idx_session_user_id
+            columns:
+              - column: { name: user_id }

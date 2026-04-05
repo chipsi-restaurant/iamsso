@@ -14,7 +14,9 @@ spring:
   liquibase:
     enabled: false
   kafka:
-    bootstrap-servers: ""
+    bootstrap-servers: "localhost:9092"
+    listener:
+      auto-startup: false
   data:
     redis:
       host: localhost
