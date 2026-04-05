@@ -50,16 +50,18 @@ server:
 app:
   issuer: http://localhost:8080
   jwt:
-    standard:
-      algorithm: RS256
-      key-id: standard-key-1
-    gost:
-      enabled: false
-      key-id: gost-key-1
+    key-id: iam-rsa-1
+    rsa-key-size: 2048
+    access-token-ttl-seconds: 3600
+    id-token-ttl-seconds: 3600
   tokens:
-    authorization-code-ttl-seconds: 60
-    device-code-ttl-seconds: 600
-    device-code-polling-interval: 5
+    refresh-token-ttl-seconds: 2592000
+  authorization-code:
+    ttl-seconds: 60
+  device-code:
+    ttl-seconds: 600
+    polling-interval-seconds: 5
+    user-code-length: 8
   user-service:
     base-url: http://localhost:8081
   login-page:

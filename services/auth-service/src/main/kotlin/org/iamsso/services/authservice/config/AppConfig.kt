@@ -6,6 +6,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 data class AppProperties(
     val issuer: String = "http://localhost:8080",
     val jwt: JwtProps = JwtProps(),
+    val tokens: TokensProps = TokensProps(),
     val authorizationCode: AuthCodeProps = AuthCodeProps(),
     val deviceCode: DeviceCodeProps = DeviceCodeProps(),
     val userService: UserServiceProps = UserServiceProps(),
@@ -20,9 +21,8 @@ data class AppProperties(
         val keyId: String = "iam-rsa-1",
         val rsaKeySize: Int = 2048,
     )
-    data class AuthCodeProps(
-        val ttlSeconds: Long = 60,
-    )
+    data class TokensProps(val refreshTokenTtlSeconds: Long = 2592000)
+    data class AuthCodeProps(val ttlSeconds: Long = 60)
     data class DeviceCodeProps(
         val ttlSeconds: Long = 600,
         val pollingIntervalSeconds: Int = 5,

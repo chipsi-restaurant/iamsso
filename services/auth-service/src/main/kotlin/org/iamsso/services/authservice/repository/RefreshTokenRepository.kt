@@ -21,4 +21,8 @@ interface RefreshTokenRepository : JpaRepository<RefreshTokenEntity, UUID> {
     @Modifying
     @Query("UPDATE RefreshTokenEntity r SET r.revoked = true WHERE r.sessionId = :sessionId AND r.revoked = false")
     fun revokeAllBySessionId(sessionId: UUID): Int
+
+    @Modifying
+    @Query("UPDATE RefreshTokenEntity r SET r.revoked = true WHERE r.tokenHash = :hash")
+    fun revokeByTokenHash(hash: String): Int
 }

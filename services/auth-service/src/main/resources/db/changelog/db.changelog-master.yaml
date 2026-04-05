@@ -1,3 +1,5 @@
 databaseChangeLog:
-  - includeAll:
-      path: db/changelog/changelogs/
+  - include:
+      file: classpath:db/changelog/changelogs/001-init-schema.yaml
+  - include:
+      file: classpath:db/changelog/changelogs/002-add-family-id.yaml

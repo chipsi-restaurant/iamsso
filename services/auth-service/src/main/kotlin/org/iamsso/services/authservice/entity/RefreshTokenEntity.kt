@@ -22,13 +22,16 @@ class RefreshTokenEntity(
     val scopes: String = "",
 
     @Column(name = "session_id")
-    val sessionId: UUID = UUID.randomUUID(),
+    val sessionId: UUID? = null,
 
     @Column(nullable = false)
     var revoked: Boolean = false,
 
     @Column(name = "replaced_by")
     var replacedBy: UUID? = null,
+
+    @Column(name = "family_id")
+    var familyId: UUID? = null,
 
     @Column(name = "expires_at", nullable = false)
     val expiresAt: Instant = Instant.now(),

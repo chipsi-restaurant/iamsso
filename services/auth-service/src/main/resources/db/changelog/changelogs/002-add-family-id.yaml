@@ -1,0 +1,18 @@
+databaseChangeLog:
+  - changeSet:
+      id: 002-add-family-id-to-refresh-tokens
+      author: Arseniy Kolyshkin
+      changes:
+        - addColumn:
+            schemaName: iamsso_auth
+            tableName: refresh_tokens
+            columns:
+              - column:
+                  name: family_id
+                  type: uuid
+        - createIndex:
+            schemaName: iamsso_auth
+            tableName: refresh_tokens
+            indexName: idx_rt_family_id
+            columns:
+              - column: { name: family_id }
