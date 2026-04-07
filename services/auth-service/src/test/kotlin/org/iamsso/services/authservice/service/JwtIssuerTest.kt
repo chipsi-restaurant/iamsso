@@ -63,20 +63,18 @@ class JwtIssuerTest {
     }
 
     @Test
-    fun `issueIdToken includes nonce and email`() {
+    fun `issueIdToken includes nonce`() {
         val userId = UUID.randomUUID()
         val token = jwtIssuer.issueIdToken(
             userId = userId,
             clientId = "client",
             nonce = "abc123",
-            scopes = listOf("openid", "email"),
+            scopes = listOf("openid"),
             ttlSeconds = 3600,
-            email = "user@example.com",
         )
         val claims = SignedJWT.parse(token).jwtClaimsSet
         assertEquals(userId.toString(), claims.subject)
         assertEquals("abc123", claims.getStringClaim("nonce"))
-        assertEquals("user@example.com", claims.getStringClaim("email"))
     }
 
     @Test

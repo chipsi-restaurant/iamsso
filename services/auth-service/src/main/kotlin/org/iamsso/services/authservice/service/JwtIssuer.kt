@@ -55,7 +55,6 @@ class JwtIssuer(
         nonce: String?,
         scopes: List<String>,
         ttlSeconds: Long,
-        email: String? = null,
         displayName: String? = null,
         preferredUsername: String? = null,
         firstName: String? = null,
@@ -72,7 +71,6 @@ class JwtIssuer(
             .jwtID(UUID.randomUUID().toString())
 
         nonce?.let { builder.claim("nonce", it) }
-        if ("email" in scopes && email != null) builder.claim("email", email)
         if ("profile" in scopes) {
             displayName?.let { builder.claim("name", it) }
             preferredUsername?.let { builder.claim("preferred_username", it) }
