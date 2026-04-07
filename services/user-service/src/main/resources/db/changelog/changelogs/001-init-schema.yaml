@@ -1,0 +1,240 @@
+# db/changelog/changelogs/001-init-schema.yaml
+
+databaseChangeLog:
+  - changeSet:
+      id: 001-create-schema
+      author: Arseniy Kolyshkin
+      changes:
+        - sql:
+            sql: CREATE SCHEMA IF NOT EXISTS iamsso_users
+
+  - changeSet:
+      id: 001-create-users
+      author: Arseniy Kolyshkin
+      changes:
+        - createTable:
+            schemaName: iamsso_users
+            tableName: users
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: email
+                  type: varchar(255)
+                  constraints:
+                    unique: true
+              - column:
+                  name: username
+                  type: varchar(32)
+                  constraints:
+                    unique: true
+              - column:
+                  name: display_name
+                  type: varchar(100)
+              - column:
+                  name: password_hash
+                  type: varchar(500)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(30)
+                  defaultValue: PENDING_VERIFICATION
+                  constraints:
+                    nullable: false
+              - column:
+                  name: email_verified
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: locale
+                  type: varchar(10)
+                  defaultValue: en
+                  constraints:
+                    nullable: false
+              - column:
+                  name: failed_attempts
+                  type: int
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: locked_until
+                  type: timestamptz
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - sql:
+            sql: |
+              ALTER TABLE iamsso_users.users
+              ADD CONSTRAINT chk_email_or_username
+              CHECK (email IS NOT NULL OR username IS NOT NULL)
+        - createIndex:
+            schemaName: iamsso_users
+            tableName: users
+            indexName: idx_users_email
+            columns:
+              - column: { name: email }
+        - createIndex:
+            schemaName: iamsso_users
+            tableName: users
+            indexName: idx_users_username
+            columns:
+              - column: { name: username }
+        - createIndex:
+            schemaName: iamsso_users
+            tableName: users
+            indexName: idx_users_status
+            columns:
+              - column: { name: status }
+
+  - changeSet:
+      id: 001-create-user-profiles
+      author: Arseniy Kolyshkin
+      changes:
+        - createTable:
+            schemaName: iamsso_users
+            tableName: user_profiles
+            columns:
+              - column:
+                  name: user_id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    foreignKeyName: fk_profile_user
+                    references: iamsso_users.users(id)
+                    deleteCascade: true
+              - column:
+                  name: first_name
+                  type: varchar(50)
+              - column:
+                  name: last_name
+                  type: varchar(50)
+              - column:
+                  name: avatar_url
+                  type: varchar(500)
+              - column:
+                  name: timezone
+                  type: varchar(50)
+                  defaultValue: UTC
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 001-create-mfa-factors
+      author: Arseniy Kolyshkin
+      changes:
+        - createTable:
+            schemaName: iamsso_users
+            tableName: mfa_factors
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: user_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_mfa_user
+                    references: iamsso_users.users(id)
+                    deleteCascade: true
+              - column:
+                  name: factor_type
+                  type: varchar(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(20)
+                  defaultValue: PENDING
+                  constraints:
+                    nullable: false
+              - column:
+                  name: display_name
+                  type: varchar(100)
+              - column:
+                  name: secret
+                  type: varchar(500)
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            schemaName: iamsso_users
+            tableName: mfa_factors
+            constraintName: uq_user_factor_type
+            columnNames: user_id, factor_type
+        - createIndex:
+            schemaName: iamsso_users
+            tableName: mfa_factors
+            indexName: idx_mfa_user_id
+            columns:
+              - column: { name: user_id }
+
+  - changeSet:
+      id: 001-create-email-verification-tokens
+      author: Arseniy Kolyshkin
+      changes:
+        - createTable:
+            schemaName: iamsso_users
+            tableName: email_verification_tokens
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: user_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_evt_user
+                    references: iamsso_users.users(id)
+                    deleteCascade: true
+              - column:
+                  name: token
+                  type: varchar(500)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: expires_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - createIndex:
+            schemaName: iamsso_users
+            tableName: email_verification_tokens
+            indexName: idx_evt_user_id
+            columns:
+              - column: { name: user_id }

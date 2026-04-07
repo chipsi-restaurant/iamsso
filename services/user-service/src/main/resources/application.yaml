@@ -1,1 +1,46 @@
-spring.application.name=user-service
+spring:
+  application:
+    name: user-service
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/iamsso_users
+    username: app
+    password: app
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        default_schema: iamsso_users
+        jdbc.time_zone: UTC
+
+  liquibase:
+    enabled: true
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+    liquibase-schema: public
+    default-schema: iamsso_users
+
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all
+      properties:
+        enable.idempotence: true
+
+server:
+  port: 8081
+
+app:
+  credentials:
+    max-failed-attempts: 5
+    lock-duration-minutes: 30
+  email-verification:
+    token-ttl-hours: 24
+    resend-cooldown-seconds: 60
