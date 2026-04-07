@@ -25,6 +25,7 @@ class UserEntity(
     @Enumerated(EnumType.STRING) @Column(nullable = false) var status: UserStatus = UserStatus.PENDING_VERIFICATION,
     @Column(name = "email_verified", nullable = false) var emailVerified: Boolean = false,
     @Column(nullable = false) var locale: String = "en",
+    @Column(nullable = false) var role: String = "user",
     @Column(name = "failed_attempts", nullable = false) var failedAttempts: Int = 0,
     @Column(name = "locked_until") var lockedUntil: Instant? = null,
     @Column(name = "created_at", nullable = false, updatable = false) val createdAt: Instant = Instant.now(),

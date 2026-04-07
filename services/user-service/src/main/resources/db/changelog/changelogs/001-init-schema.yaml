@@ -238,3 +238,24 @@ databaseChangeLog:
             indexName: idx_evt_user_id
             columns:
               - column: { name: user_id }
+
+  - changeSet:
+      id: 002-add-role-to-users
+      author: Arseniy Kolyshkin
+      changes:
+        - addColumn:
+            schemaName: iamsso_users
+            tableName: users
+            columns:
+              - column:
+                  name: role
+                  type: varchar(50)
+                  defaultValue: user
+                  constraints:
+                    nullable: false
+        - createIndex:
+            schemaName: iamsso_users
+            tableName: users
+            indexName: idx_users_role
+            columns:
+              - column: { name: role }
