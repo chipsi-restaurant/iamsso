@@ -24,4 +24,7 @@ object KafkaTopics {
 
     /** События SSO-сессий */
     const val SESSION_EVENTS = "iam.session.events"
+
+    /** События политик авторизации */
+    const val POLICY_EVENTS = "iam.policy.events"
 }

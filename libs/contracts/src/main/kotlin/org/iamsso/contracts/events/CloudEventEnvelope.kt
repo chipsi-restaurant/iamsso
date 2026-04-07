@@ -58,6 +58,10 @@ data class CloudEventEnvelope<T : DomainEvent>(
     // ── Session ──
     JsonSubTypes.Type(value = SessionCreatedEvent::class,  name = "session.created"),
     JsonSubTypes.Type(value = SessionDestroyedEvent::class, name = "session.destroyed"),
+    // ── Policy ──
+    JsonSubTypes.Type(value = PolicyCreatedEvent::class, name = "policy.created"),
+    JsonSubTypes.Type(value = PolicyUpdatedEvent::class, name = "policy.updated"),
+    JsonSubTypes.Type(value = PolicyDeletedEvent::class, name = "policy.deleted"),
 )
 sealed interface DomainEvent {
     val eventType: String
