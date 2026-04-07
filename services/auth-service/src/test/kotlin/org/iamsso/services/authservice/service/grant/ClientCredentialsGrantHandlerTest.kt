@@ -35,7 +35,7 @@ class ClientCredentialsGrantHandlerTest {
     @BeforeEach
     fun setUp() {
         handler = ClientCredentialsGrantHandler(jwtIssuer, authEventPublisher)
-        whenever(jwtIssuer.issueAccessToken(anyOrNull(), any(), any(), anyOrNull(), anyOrNull(), anyOrNull(), any())).thenReturn("svc-token")
+        whenever(jwtIssuer.issueAccessToken(anyOrNull(), any(), any(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), any())).thenReturn("svc-token")
     }
 
     @Test

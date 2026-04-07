@@ -56,7 +56,7 @@ class RefreshTokenGrantHandlerTest {
     @BeforeEach
     fun setUp() {
         handler = RefreshTokenGrantHandler(refreshTokenRepository, jwtIssuer, tokenFamilyService, authEventPublisher, props)
-        whenever(jwtIssuer.issueAccessToken(anyOrNull(), any(), any(), anyOrNull(), anyOrNull(), anyOrNull(), any())).thenReturn("new-access-token")
+        whenever(jwtIssuer.issueAccessToken(anyOrNull(), any(), any(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), any())).thenReturn("new-access-token")
         whenever(refreshTokenRepository.save(any<RefreshTokenEntity>())).thenAnswer { it.arguments[0] }
     }
 

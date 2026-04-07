@@ -58,7 +58,7 @@ class DeviceCodeGrantHandlerTest {
     fun setUp() {
         whenever(redis.opsForValue()).thenReturn(valueOps)
         handler = DeviceCodeGrantHandler(deviceCodeStore, refreshTokenRepository, jwtIssuer, tokenFamilyService, authEventPublisher, redis, props)
-        whenever(jwtIssuer.issueAccessToken(anyOrNull(), any(), any(), anyOrNull(), anyOrNull(), anyOrNull(), any())).thenReturn("access-token")
+        whenever(jwtIssuer.issueAccessToken(anyOrNull(), any(), any(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), any())).thenReturn("access-token")
         whenever(refreshTokenRepository.save(any<RefreshTokenEntity>())).thenAnswer { it.arguments[0] }
     }
 

@@ -19,6 +19,7 @@ data class UserData(
     val emailVerified: Boolean,
     val mfaEnabled: Boolean,
     val locale: String?,
+    val role: String?,
 )
 
 data class CredentialsResult(
@@ -81,7 +82,8 @@ class UserServiceClient(
             status = status!!.toString(),
             emailVerified = emailVerified!!,
             mfaEnabled = mfaEnabled!!,
-            locale = locale
+            locale = locale,
+            role = role
         )
 
     private fun org.iamsso.contracts.user.model.CredentialsVerificationResponse.toCredentialsResult(): CredentialsResult =

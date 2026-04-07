@@ -28,6 +28,7 @@ class JwtIssuer(
         sessionId: String?,
         email: String? = null,
         emailVerified: Boolean? = null,
+        role: String? = null,
         ttlSeconds: Long,
     ): String {
         val now = Instant.now()
@@ -45,6 +46,8 @@ class JwtIssuer(
             builder.claim("email", email)
             builder.claim("email_verified", emailVerified ?: false)
         }
+
+        role?.let { builder.claim("role", it) }
 
         return sign(builder.build())
     }

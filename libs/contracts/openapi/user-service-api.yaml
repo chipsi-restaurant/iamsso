@@ -979,6 +979,9 @@ components:
         locale:
           type: string
           description: Локаль пользователя
+        role:
+          type: string
+          description: Роль пользователя
         createdAt:
           type: string
           format: date-time
