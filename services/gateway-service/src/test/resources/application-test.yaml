@@ -1,0 +1,18 @@
+spring:
+  cloud:
+    gateway:
+      routes: []
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: http://localhost:8080/.well-known/jwks.json
+
+app:
+  public-paths:
+    - /oauth2/**
+    - /.well-known/**
+    - /login
+    - /actuator/**
+  policy-service:
+    evaluate-url: http://localhost:8082/api/v1/policy/evaluate
