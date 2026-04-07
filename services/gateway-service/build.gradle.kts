@@ -21,13 +21,13 @@ repositories {
 
 dependencyManagement {
     imports {
-        mavenBom("org.springframework.cloud:spring-cloud-dependencies:2025.0.1")
+        mavenBom("org.springframework.cloud:spring-cloud-dependencies:2025.1.1")
     }
 }
 
 dependencies {
     // Gateway
-    implementation("org.springframework.cloud:spring-cloud-starter-gateway")
+    implementation("org.springframework.cloud:spring-cloud-starter-gateway-server-webflux")
 
     // Security — JWT validation
     implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
@@ -41,7 +41,8 @@ dependencies {
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
     testImplementation("org.mockito.kotlin:mockito-kotlin:5.4.0")
     testImplementation("io.projectreactor:reactor-test")
-    testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
+    testImplementation("com.squareup.okhttp3:mockwebserver3-junit5:5.0.0-alpha.14")
+    testImplementation("com.squareup.okhttp3:okhttp:5.0.0-alpha.14")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
