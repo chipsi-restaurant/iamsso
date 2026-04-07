@@ -2,6 +2,7 @@ package org.iamsso.services.authservice.service
 
 import org.iamsso.contracts.user.api.InternalApi
 import org.iamsso.contracts.user.api.ProfileApi
+import org.iamsso.contracts.user.api.UsersApi
 import org.iamsso.contracts.user.model.VerifyCredentialsRequest
 import org.iamsso.services.authservice.config.AppProperties
 import org.springframework.core.task.VirtualThreadTaskExecutor
@@ -48,6 +49,7 @@ class UserServiceClient(
 
     private val internalApi = InternalApi(appProperties.userService.baseUrl)
     private val profileApi = ProfileApi(appProperties.userService.baseUrl)
+    private val usersApi = UsersApi(appProperties.userService.baseUrl)
 
     fun getByEmail(email: String): UserData? =
         runCatchingRest { internalApi.getUserByEmail(email).toUserData() }
@@ -62,6 +64,9 @@ class UserServiceClient(
                 verifyCredentialsRequest = VerifyCredentialsRequest(password = password)
             ).toCredentialsResult()
         }
+
+    fun getById(userId: UUID): UserData? =
+        runCatchingRest { usersApi.getUserById(userId).toUserData() }
 
     fun getProfile(userId: UUID): UserProfile? =
         runCatchingRest { profileApi.getUserProfile(userId).toUserProfile() }

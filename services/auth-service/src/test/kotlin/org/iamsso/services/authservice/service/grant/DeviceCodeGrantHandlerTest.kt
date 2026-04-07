@@ -13,6 +13,7 @@ import org.iamsso.services.authservice.repository.RefreshTokenRepository
 import org.iamsso.services.authservice.service.AuthEventPublisher
 import org.iamsso.services.authservice.service.JwtIssuer
 import org.iamsso.services.authservice.service.TokenFamilyService
+import org.iamsso.services.authservice.service.UserServiceClient
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -38,6 +39,7 @@ class DeviceCodeGrantHandlerTest {
     @Mock lateinit var jwtIssuer: JwtIssuer
     @Mock lateinit var tokenFamilyService: TokenFamilyService
     @Mock lateinit var authEventPublisher: AuthEventPublisher
+    @Mock lateinit var userServiceClient: UserServiceClient
     @Mock lateinit var redis: StringRedisTemplate
     @Mock lateinit var valueOps: ValueOperations<String, String>
 
@@ -57,7 +59,7 @@ class DeviceCodeGrantHandlerTest {
     @BeforeEach
     fun setUp() {
         whenever(redis.opsForValue()).thenReturn(valueOps)
-        handler = DeviceCodeGrantHandler(deviceCodeStore, refreshTokenRepository, jwtIssuer, tokenFamilyService, authEventPublisher, redis, props)
+        handler = DeviceCodeGrantHandler(deviceCodeStore, refreshTokenRepository, jwtIssuer, tokenFamilyService, authEventPublisher, userServiceClient, redis, props)
         whenever(jwtIssuer.issueAccessToken(anyOrNull(), any(), any(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), any())).thenReturn("access-token")
         whenever(refreshTokenRepository.save(any<RefreshTokenEntity>())).thenAnswer { it.arguments[0] }
     }

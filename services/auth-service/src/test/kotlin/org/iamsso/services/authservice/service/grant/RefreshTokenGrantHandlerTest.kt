@@ -8,6 +8,7 @@ import org.iamsso.services.authservice.repository.RefreshTokenRepository
 import org.iamsso.services.authservice.service.AuthEventPublisher
 import org.iamsso.services.authservice.service.JwtIssuer
 import org.iamsso.services.authservice.service.TokenFamilyService
+import org.iamsso.services.authservice.service.UserServiceClient
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -35,6 +36,7 @@ class RefreshTokenGrantHandlerTest {
     @Mock lateinit var jwtIssuer: JwtIssuer
     @Mock lateinit var tokenFamilyService: TokenFamilyService
     @Mock lateinit var authEventPublisher: AuthEventPublisher
+    @Mock lateinit var userServiceClient: UserServiceClient
 
     private lateinit var handler: RefreshTokenGrantHandler
     private val props = AppProperties()
@@ -55,7 +57,7 @@ class RefreshTokenGrantHandlerTest {
 
     @BeforeEach
     fun setUp() {
-        handler = RefreshTokenGrantHandler(refreshTokenRepository, jwtIssuer, tokenFamilyService, authEventPublisher, props)
+        handler = RefreshTokenGrantHandler(refreshTokenRepository, jwtIssuer, tokenFamilyService, authEventPublisher, userServiceClient, props)
         whenever(jwtIssuer.issueAccessToken(anyOrNull(), any(), any(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), any())).thenReturn("new-access-token")
         whenever(refreshTokenRepository.save(any<RefreshTokenEntity>())).thenAnswer { it.arguments[0] }
     }

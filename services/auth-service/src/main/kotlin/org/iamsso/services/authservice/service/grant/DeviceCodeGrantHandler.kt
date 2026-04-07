@@ -15,6 +15,7 @@ import org.iamsso.services.authservice.service.GrantHandler
 import org.iamsso.services.authservice.service.JwtIssuer
 import org.iamsso.services.authservice.service.TokenFamilyService
 import org.iamsso.services.authservice.service.TokenResponse
+import org.iamsso.services.authservice.service.UserServiceClient
 import org.springframework.data.redis.core.StringRedisTemplate
 import org.springframework.stereotype.Component
 import java.security.MessageDigest
@@ -30,6 +31,7 @@ class DeviceCodeGrantHandler(
     private val jwtIssuer: JwtIssuer,
     private val tokenFamilyService: TokenFamilyService,
     private val authEventPublisher: AuthEventPublisher,
+    private val userServiceClient: UserServiceClient,
     private val redis: StringRedisTemplate,
     private val props: AppProperties,
 ) : GrantHandler {
@@ -54,6 +56,7 @@ class DeviceCodeGrantHandler(
 
         val userId = data.userId ?: throw InvalidGrantException("Approved but userId missing")
         val scopes = data.scopes
+        val userData = userServiceClient.getById(userId)
         val accessToken = jwtIssuer.issueAccessToken(
             userId = userId,
             clientId = client.clientId,
@@ -61,6 +64,7 @@ class DeviceCodeGrantHandler(
             sessionId = null,
             email = null,
             emailVerified = null,
+            role = userData?.role,
             ttlSeconds = client.accessTokenTtlSeconds.toLong(),
         )
 

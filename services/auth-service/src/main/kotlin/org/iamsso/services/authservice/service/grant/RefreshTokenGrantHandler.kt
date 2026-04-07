@@ -10,6 +10,7 @@ import org.iamsso.services.authservice.service.GrantHandler
 import org.iamsso.services.authservice.service.JwtIssuer
 import org.iamsso.services.authservice.service.TokenFamilyService
 import org.iamsso.services.authservice.service.TokenResponse
+import org.iamsso.services.authservice.service.UserServiceClient
 import org.springframework.stereotype.Component
 import java.security.MessageDigest
 import java.time.Duration
@@ -23,6 +24,7 @@ class RefreshTokenGrantHandler(
     private val jwtIssuer: JwtIssuer,
     private val tokenFamilyService: TokenFamilyService,
     private val authEventPublisher: AuthEventPublisher,
+    private val userServiceClient: UserServiceClient,
     private val props: AppProperties,
 ) : GrantHandler {
 
@@ -48,6 +50,7 @@ class RefreshTokenGrantHandler(
         refreshTokenRepository.save(entity)
 
         val scopes = entity.scopes.split(" ")
+        val userData = userServiceClient.getById(entity.userId)
         val accessToken = jwtIssuer.issueAccessToken(
             userId = entity.userId,
             clientId = client.clientId,
@@ -55,6 +58,7 @@ class RefreshTokenGrantHandler(
             sessionId = entity.sessionId?.toString(),
             email = null,
             emailVerified = null,
+            role = userData?.role,
             ttlSeconds = client.accessTokenTtlSeconds.toLong(),
         )
 

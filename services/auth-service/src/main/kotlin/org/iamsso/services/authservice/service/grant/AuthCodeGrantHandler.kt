@@ -44,6 +44,7 @@ class AuthCodeGrantHandler(
         if (!verifyPkce(codeVerifier, codeData.codeChallenge)) throw InvalidGrantException("PKCE verification failed")
 
         val scopes = codeData.scopes
+        val userData = userServiceClient.getById(codeData.userId)
         val accessToken = jwtIssuer.issueAccessToken(
             userId = codeData.userId,
             clientId = client.clientId,
@@ -51,6 +52,7 @@ class AuthCodeGrantHandler(
             sessionId = codeData.sessionId,
             email = null,
             emailVerified = null,
+            role = userData?.role,
             ttlSeconds = client.accessTokenTtlSeconds.toLong(),
         )
 
