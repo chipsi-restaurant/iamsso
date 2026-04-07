@@ -1,0 +1,1069 @@
+openapi: 3.1.0
+info:
+  title: Auth Service API
+  description: |
+    Authorization Server и OpenID Connect Provider для IAM/SSO платформы.
+
+    Реализует:
+    - OAuth 2.0 Authorization Code + PKCE (RFC 7636)
+    - OAuth 2.0 Client Credentials (RFC 6749 §4.4)
+    - OAuth 2.0 Refresh Token (RFC 6749 §6)
+    - OAuth 2.0 Device Authorization Grant (RFC 8628)
+    - OpenID Connect Core 1.0 (id_token, userinfo)
+    - Token Revocation (RFC 7009)
+    - Token Introspection (RFC 7662)
+    - JWKS endpoint (RFC 7517)
+    - OpenID Connect Discovery
+
+    **Хранение:**
+    - Authorization codes, device codes — Redis (короткоживущие)
+    - Refresh tokens — PostgreSQL (долгоживущие, с ротацией)
+    - Registered clients — PostgreSQL
+
+    **Стек:** Kotlin, Spring Boot 4, Java 25
+  version: 1.0.0
+  contact:
+    name: IAM Platform Team
+
+servers:
+  - url: http://localhost:8080
+    description: Локальная разработка
+  - url: http://auth-service:8080
+    description: Внутренняя сеть Docker / Kubernetes
+
+tags:
+  - name: OAuth
+    description: Эндпоинты OAuth 2.0 (token, authorize, revoke, introspect)
+  - name: OIDC
+    description: OpenID Connect (userinfo, discovery, jwks)
+  - name: Device
+    description: Device Authorization Grant (RFC 8628)
+  - name: Clients
+    description: Управление зарегистрированными OAuth-клиентами
+  - name: Sessions
+    description: Управление SSO-сессиями
+  - name: Internal
+    description: Служебные эндпоинты
+
+paths:
+
+  # ── Authorization Endpoint ─────────────────
+  /oauth2/authorize:
+    get:
+      operationId: authorize
+      tags: [OAuth]
+      summary: Начало Authorization Code + PKCE flow
+      description: |
+        Перенаправляет на страницу логина.
+        После аутентификации и consent — редирект на redirect_uri с code.
+        Параметры по RFC 6749 §4.1.1 и RFC 7636 (PKCE).
+      parameters:
+        - name: response_type
+          in: query
+          required: true
+          description: Всегда `code`
+          schema:
+            type: string
+            enum: [code]
+        - name: client_id
+          in: query
+          required: true
+          description: Идентификатор зарегистрированного клиента
+          schema:
+            type: string
+        - name: redirect_uri
+          in: query
+          required: true
+          description: URI для редиректа после авторизации
+          schema:
+            type: string
+            format: uri
+        - name: scope
+          in: query
+          description: Запрашиваемые scope через пробел (openid, profile, email)
+          schema:
+            type: string
+        - name: state
+          in: query
+          description: Случайная строка для защиты от CSRF
+          schema:
+            type: string
+        - name: code_challenge
+          in: query
+          required: true
+          description: PKCE code challenge — BASE64URL(SHA256(code_verifier))
+          schema:
+            type: string
+        - name: code_challenge_method
+          in: query
+          required: true
+          description: Всегда `S256`
+          schema:
+            type: string
+            enum: [S256]
+        - name: nonce
+          in: query
+          description: Nonce для привязки id_token к сессии (OIDC)
+          schema:
+            type: string
+      responses:
+        '302':
+          description: Редирект на страницу логина или на redirect_uri с code
+        '400':
+          description: Невалидные параметры запроса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OAuthError'
+
+  # ── Token Endpoint ─────────────────────────
+  /oauth2/token:
+    post:
+      operationId: token
+      tags: [OAuth]
+      summary: Получение / обновление токенов
+      description: |
+        Универсальный эндпоинт выдачи токенов. Поведение зависит от grant_type:
+
+        **authorization_code** — обмен code на токены, PKCE обязателен
+        **client_credentials** — токен для межсервисного взаимодействия
+        **refresh_token** — обновление access_token с ротацией refresh_token
+        **urn:ietf:params:oauth:grant-type:device_code** — Device Authorization
+
+        Аутентификация клиента: client_id + client_secret в теле
+        или через Basic Auth.
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRequest'
+      responses:
+        '200':
+          description: Токены выданы
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+              examples:
+                authorizationCode:
+                  summary: Ответ на authorization_code
+                  value:
+                    access_token: "eyJhbGciOiJSUzI1NiIs..."
+                    token_type: "Bearer"
+                    expires_in: 3600
+                    refresh_token: "dGhpcyBpcyBhIHJlZnJl..."
+                    id_token: "eyJhbGciOiJSUzI1NiIs..."
+                    scope: "openid profile email"
+                clientCredentials:
+                  summary: Ответ на client_credentials
+                  value:
+                    access_token: "eyJhbGciOiJSUzI1NiIs..."
+                    token_type: "Bearer"
+                    expires_in: 3600
+                    scope: "service"
+                refreshToken:
+                  summary: Ответ на refresh_token
+                  value:
+                    access_token: "eyJhbGciOiJSUzI1NiIs..."
+                    token_type: "Bearer"
+                    expires_in: 3600
+                    refresh_token: "bmV3X3JlZnJlc2hfdG9r..."
+                    scope: "openid profile email"
+        '400':
+          description: Невалидный запрос
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OAuthError'
+              examples:
+                invalidGrant:
+                  value:
+                    error: "invalid_grant"
+                    error_description: "Authorization code истёк или уже использован"
+                pendingDevice:
+                  value:
+                    error: "authorization_pending"
+                    error_description: "Пользователь ещё не подтвердил авторизацию"
+        '401':
+          description: Невалидная аутентификация клиента
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OAuthError'
+
+  # ── Token Revocation (RFC 7009) ────────────
+  /oauth2/revoke:
+    post:
+      operationId: revokeToken
+      tags: [OAuth]
+      summary: Отзыв токена
+      description: |
+        Отзывает access_token или refresh_token.
+        При отзыве refresh_token все связанные access_token
+        также становятся невалидными.
+        Всегда возвращает 200 (RFC 7009 §2.2).
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [token, client_id, client_secret]
+              properties:
+                token:
+                  type: string
+                  description: Токен для отзыва
+                token_type_hint:
+                  type: string
+                  enum: [access_token, refresh_token]
+                  description: Подсказка типа токена
+                client_id:
+                  type: string
+                client_secret:
+                  type: string
+      responses:
+        '200':
+          description: Токен отозван (или уже был невалиден)
+
+  # ── Token Introspection (RFC 7662) ─────────
+  /oauth2/introspect:
+    post:
+      operationId: introspectToken
+      tags: [OAuth]
+      summary: Интроспекция токена
+      description: |
+        Проверяет валидность токена и возвращает claims.
+        Используется Resource Server'ами для opaque tokens.
+        Требует аутентификацию клиента.
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [token, client_id, client_secret]
+              properties:
+                token:
+                  type: string
+                  description: Токен для проверки
+                token_type_hint:
+                  type: string
+                  enum: [access_token, refresh_token]
+                client_id:
+                  type: string
+                client_secret:
+                  type: string
+      responses:
+        '200':
+          description: Результат интроспекции
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IntrospectionResponse'
+
+  # ── Device Authorization (RFC 8628) ────────
+  /oauth2/device/authorize:
+    post:
+      operationId: deviceAuthorize
+      tags: [Device]
+      summary: Запрос Device Authorization
+      description: |
+        Устройство запрашивает device_code и user_code.
+        Пользователь переходит по verification_uri, вводит user_code.
+        Устройство опрашивает /oauth2/token с grant_type=device_code.
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [client_id]
+              properties:
+                client_id:
+                  type: string
+                  description: Идентификатор клиента
+                scope:
+                  type: string
+                  description: Запрашиваемые scope
+      responses:
+        '200':
+          description: Device code выдан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceAuthorizationResponse'
+              example:
+                device_code: "GmRhmhcxhwAzkoEqiMEg_DnyEysNkuNh"
+                user_code: "WDJB-MJHT"
+                verification_uri: "https://auth.example.com/device"
+                verification_uri_complete: "https://auth.example.com/device?user_code=WDJB-MJHT"
+                expires_in: 600
+                interval: 5
+
+  /oauth2/device/verify:
+    get:
+      operationId: deviceVerifyPage
+      tags: [Device]
+      summary: Страница ввода user_code
+      description: Пользователь вводит user_code для подтверждения авторизации устройства.
+      parameters:
+        - name: user_code
+          in: query
+          description: Код (если передан в URL)
+          schema:
+            type: string
+      responses:
+        '200':
+          description: HTML-страница ввода кода
+
+    post:
+      operationId: deviceVerifySubmit
+      tags: [Device]
+      summary: Подтверждение user_code
+      description: |
+        Пользователь подтверждает авторизацию.
+        После этого устройство получит токены при следующем polling.
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [user_code]
+              properties:
+                user_code:
+                  type: string
+                  description: Код с экрана устройства
+      responses:
+        '200':
+          description: Авторизация подтверждена
+        '400':
+          description: Неверный или истёкший user_code
+
+  # ── OIDC UserInfo ──────────────────────────
+  /userinfo:
+    get:
+      operationId: userInfo
+      tags: [OIDC]
+      summary: Информация о пользователе (OIDC)
+      description: |
+        Возвращает claims о пользователе на основе access_token.
+        Набор claims зависит от scope: openid, profile, email.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Claims пользователя
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserInfoResponse'
+        '401':
+          description: Невалидный access_token
+
+  # ── OIDC Discovery ─────────────────────────
+  /.well-known/openid-configuration:
+    get:
+      operationId: openidConfiguration
+      tags: [OIDC]
+      summary: OpenID Connect Discovery
+      description: Метаданные Authorization Server по OpenID Connect Discovery 1.0.
+      responses:
+        '200':
+          description: Конфигурация провайдера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OpenIdConfiguration'
+
+  # ── JWKS ───────────────────────────────────
+  /.well-known/jwks.json:
+    get:
+      operationId: jwks
+      tags: [OIDC]
+      summary: Публичные ключи (стандартные алгоритмы)
+      description: |
+        JSON Web Key Set для проверки подписи JWT.
+        Содержит RSA/EC ключи.
+      responses:
+        '200':
+          description: JWKS
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JwksResponse'
+
+  /.well-known/jwks-gost.json:
+    get:
+      operationId: jwksGost
+      tags: [OIDC]
+      summary: Публичные ключи (ГОСТ алгоритмы)
+      description: |
+        JSON Web Key Set для JWT, подписанных ГОСТ 34.10-2012.
+        Используется клиентами с поддержкой российской криптографии.
+      responses:
+        '200':
+          description: ГОСТ JWKS
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JwksResponse'
+
+  # ── OAuth Clients ──────────────────────────
+  /api/v1/clients:
+    post:
+      operationId: registerClient
+      tags: [Clients]
+      summary: Регистрация OAuth-клиента
+      description: |
+        Создаёт нового OAuth-клиента. Генерирует client_id и client_secret.
+        Секрет возвращается один раз — при создании.
+        Доступно только администраторам.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterClientRequest'
+            example:
+              clientName: "Frontend SPA"
+              grantTypes: ["authorization_code", "refresh_token"]
+              redirectUris: ["https://app.example.com/callback"]
+              scopes: ["openid", "profile", "email"]
+      responses:
+        '201':
+          description: Клиент создан (секрет в ответе)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientWithSecretResponse'
+        '409':
+          description: Клиент с таким именем уже существует
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OAuthError'
+
+    get:
+      operationId: listClients
+      tags: [Clients]
+      summary: Список зарегистрированных клиентов
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Список клиентов (без секретов)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ClientResponse'
+
+  /api/v1/clients/{clientId}:
+    parameters:
+      - name: clientId
+        in: path
+        required: true
+        description: Идентификатор клиента
+        schema:
+          type: string
+
+    get:
+      operationId: getClient
+      tags: [Clients]
+      summary: Получить клиента по ID
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Клиент найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientResponse'
+        '404':
+          description: Клиент не найден
+
+    patch:
+      operationId: updateClient
+      tags: [Clients]
+      summary: Обновить настройки клиента
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateClientRequest'
+      responses:
+        '200':
+          description: Клиент обновлён
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientResponse'
+
+    delete:
+      operationId: deleteClient
+      tags: [Clients]
+      summary: Удалить клиента
+      description: Удаляет клиента и отзывает все его токены.
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Клиент удалён
+
+  /api/v1/clients/{clientId}/secret/rotate:
+    parameters:
+      - name: clientId
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      operationId: rotateClientSecret
+      tags: [Clients]
+      summary: Ротация client_secret
+      description: |
+        Генерирует новый client_secret.
+        Старый секрет остаётся валидным 24 часа (grace period).
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Новый секрет
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientWithSecretResponse'
+
+  # ── Sessions ───────────────────────────────
+  /api/v1/sessions/current:
+    get:
+      operationId: getCurrentSession
+      tags: [Sessions]
+      summary: Текущая SSO-сессия
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Информация о сессии
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionResponse'
+        '401':
+          description: Нет активной сессии
+
+  /api/v1/sessions/logout:
+    post:
+      operationId: logout
+      tags: [Sessions]
+      summary: Завершение сессии
+      description: |
+        Завершает SSO-сессию и отзывает все связанные токены.
+        Поддерживает OIDC RP-Initiated Logout.
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                post_logout_redirect_uri:
+                  type: string
+                  format: uri
+                  description: URI для редиректа после выхода
+      responses:
+        '200':
+          description: Сессия завершена
+        '302':
+          description: Редирект на post_logout_redirect_uri
+
+  /api/v1/sessions/logout-all:
+    post:
+      operationId: logoutAll
+      tags: [Sessions]
+      summary: Завершение всех сессий пользователя
+      description: Завершает все SSO-сессии на всех устройствах и отзывает все refresh-токены.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Все сессии завершены
+
+  # ── Health ─────────────────────────────────
+  /actuator/health:
+    get:
+      operationId: healthCheck
+      tags: [Internal]
+      summary: Проверка состояния сервиса
+      description: Проверяет подключение к PostgreSQL, Redis и User Service.
+      responses:
+        '200':
+          description: Сервис работает нормально
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# КОМПОНЕНТЫ
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+components:
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+
+    # ── OAuth Token ──────────────────────────
+    TokenRequest:
+      type: object
+      required: [grant_type, client_id]
+      description: |
+        Запрос токена. Обязательные поля зависят от grant_type:
+
+        **authorization_code:** client_id, client_secret, code, redirect_uri, code_verifier
+        **client_credentials:** client_id, client_secret, scope
+        **refresh_token:** client_id, client_secret, refresh_token
+        **device_code:** client_id, device_code
+      properties:
+        grant_type:
+          type: string
+          enum:
+            - authorization_code
+            - client_credentials
+            - refresh_token
+            - "urn:ietf:params:oauth:grant-type:device_code"
+          description: Тип гранта
+        client_id:
+          type: string
+          description: Идентификатор клиента
+        client_secret:
+          type: string
+          description: Секрет клиента
+        code:
+          type: string
+          description: Authorization code (для authorization_code)
+        redirect_uri:
+          type: string
+          format: uri
+          description: Должен совпадать с URI из /authorize
+        code_verifier:
+          type: string
+          description: PKCE code verifier (для authorization_code)
+        refresh_token:
+          type: string
+          description: Refresh token (для refresh_token grant)
+        scope:
+          type: string
+          description: Запрашиваемые scope через пробел
+        device_code:
+          type: string
+          description: Device code (для device_code grant)
+
+    TokenResponse:
+      type: object
+      description: Ответ с токенами
+      properties:
+        access_token:
+          type: string
+          description: JWT access token
+        token_type:
+          type: string
+          description: Всегда Bearer
+          default: Bearer
+        expires_in:
+          type: integer
+          description: Время жизни access_token в секундах
+        refresh_token:
+          type: string
+          nullable: true
+          description: Refresh token (не выдаётся для client_credentials)
+        id_token:
+          type: string
+          nullable: true
+          description: OIDC ID Token (если запрошен scope openid)
+        scope:
+          type: string
+          description: Выданные scope
+
+    OAuthError:
+      type: object
+      required: [error]
+      description: Стандартная ошибка OAuth 2.0 (RFC 6749 §5.2)
+      properties:
+        error:
+          type: string
+          description: |
+            Коды: invalid_request, invalid_client, invalid_grant,
+            unauthorized_client, unsupported_grant_type, invalid_scope,
+            authorization_pending, slow_down, expired_token, access_denied
+        error_description:
+          type: string
+          description: Человекочитаемое описание
+        error_uri:
+          type: string
+          format: uri
+          description: URI с подробной информацией
+
+    IntrospectionResponse:
+      type: object
+      description: Результат интроспекции (RFC 7662)
+      properties:
+        active:
+          type: boolean
+          description: Валиден ли токен
+        sub:
+          type: string
+          description: Идентификатор субъекта (userId или clientId)
+        client_id:
+          type: string
+          description: Клиент, которому выдан токен
+        scope:
+          type: string
+          description: Scope токена
+        exp:
+          type: integer
+          description: Время истечения (unix timestamp)
+        iat:
+          type: integer
+          description: Время выдачи (unix timestamp)
+        iss:
+          type: string
+          description: Издатель
+        token_type:
+          type: string
+          description: Тип токена
+        roles:
+          type: array
+          items:
+            type: string
+          description: Роли субъекта
+
+    # ── Device Authorization ─────────────────
+    DeviceAuthorizationResponse:
+      type: object
+      description: Ответ Device Authorization (RFC 8628 §3.2)
+      properties:
+        device_code:
+          type: string
+          description: Код устройства (для polling /oauth2/token)
+        user_code:
+          type: string
+          description: Код для пользователя (отображается на экране устройства)
+        verification_uri:
+          type: string
+          format: uri
+          description: URI, куда пользователь должен перейти
+        verification_uri_complete:
+          type: string
+          format: uri
+          description: URI с user_code в параметре (для QR-кода)
+        expires_in:
+          type: integer
+          description: Время жизни device_code в секундах
+        interval:
+          type: integer
+          default: 5
+          description: Минимальный интервал polling в секундах
+
+    # ── OIDC ─────────────────────────────────
+    UserInfoResponse:
+      type: object
+      description: |
+        Claims о пользователе (OIDC Core §5.1).
+        Набор зависит от scope.
+      properties:
+        sub:
+          type: string
+          description: Идентификатор пользователя
+        email:
+          type: string
+          format: email
+          description: Email (scope email)
+        email_verified:
+          type: boolean
+          description: Подтверждён ли email (scope email)
+        preferred_username:
+          type: string
+          description: Username (scope profile)
+        name:
+          type: string
+          description: Отображаемое имя (scope profile)
+        given_name:
+          type: string
+          description: Имя (scope profile)
+        family_name:
+          type: string
+          description: Фамилия (scope profile)
+        locale:
+          type: string
+          description: Локаль (scope profile)
+        picture:
+          type: string
+          format: uri
+          description: Аватар (scope profile)
+        updated_at:
+          type: integer
+          description: Последнее обновление профиля (unix timestamp)
+
+    OpenIdConfiguration:
+      type: object
+      description: OpenID Connect Discovery 1.0
+      properties:
+        issuer:
+          type: string
+        authorization_endpoint:
+          type: string
+          format: uri
+        token_endpoint:
+          type: string
+          format: uri
+        userinfo_endpoint:
+          type: string
+          format: uri
+        jwks_uri:
+          type: string
+          format: uri
+        revocation_endpoint:
+          type: string
+          format: uri
+        introspection_endpoint:
+          type: string
+          format: uri
+        device_authorization_endpoint:
+          type: string
+          format: uri
+        response_types_supported:
+          type: array
+          items:
+            type: string
+        grant_types_supported:
+          type: array
+          items:
+            type: string
+        subject_types_supported:
+          type: array
+          items:
+            type: string
+        id_token_signing_alg_values_supported:
+          type: array
+          items:
+            type: string
+        scopes_supported:
+          type: array
+          items:
+            type: string
+        token_endpoint_auth_methods_supported:
+          type: array
+          items:
+            type: string
+        code_challenge_methods_supported:
+          type: array
+          items:
+            type: string
+
+    JwksResponse:
+      type: object
+      description: JSON Web Key Set (RFC 7517)
+      properties:
+        keys:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+            description: Публичный ключ в формате JWK
+
+    # ── Clients ──────────────────────────────
+    RegisterClientRequest:
+      type: object
+      required: [clientName, grantTypes, redirectUris]
+      description: Запрос на регистрацию OAuth-клиента
+      properties:
+        clientName:
+          type: string
+          maxLength: 100
+          description: Имя приложения
+        grantTypes:
+          type: array
+          items:
+            type: string
+            enum: [authorization_code, client_credentials, refresh_token, device_code]
+          description: Разрешённые типы грантов
+        redirectUris:
+          type: array
+          items:
+            type: string
+            format: uri
+          description: Разрешённые redirect URI
+        scopes:
+          type: array
+          items:
+            type: string
+          default: ["openid", "profile", "email"]
+          description: Разрешённые scope
+        tokenEndpointAuthMethod:
+          type: string
+          enum: [client_secret_basic, client_secret_post]
+          default: client_secret_post
+          description: Способ аутентификации клиента
+        accessTokenTtlSeconds:
+          type: integer
+          default: 3600
+          description: TTL access_token (секунды)
+        refreshTokenTtlSeconds:
+          type: integer
+          default: 2592000
+          description: TTL refresh_token (секунды, по умолчанию 30 дней)
+        deviceCodeTtlSeconds:
+          type: integer
+          default: 600
+          description: TTL device_code (секунды)
+
+    UpdateClientRequest:
+      type: object
+      description: Частичное обновление клиента
+      properties:
+        clientName:
+          type: string
+          maxLength: 100
+        redirectUris:
+          type: array
+          items:
+            type: string
+            format: uri
+        scopes:
+          type: array
+          items:
+            type: string
+        grantTypes:
+          type: array
+          items:
+            type: string
+        accessTokenTtlSeconds:
+          type: integer
+        refreshTokenTtlSeconds:
+          type: integer
+
+    ClientResponse:
+      type: object
+      description: OAuth-клиент (без секрета)
+      properties:
+        clientId:
+          type: string
+          description: Уникальный идентификатор
+        clientName:
+          type: string
+          description: Имя приложения
+        grantTypes:
+          type: array
+          items:
+            type: string
+        redirectUris:
+          type: array
+          items:
+            type: string
+        scopes:
+          type: array
+          items:
+            type: string
+        tokenEndpointAuthMethod:
+          type: string
+        accessTokenTtlSeconds:
+          type: integer
+        refreshTokenTtlSeconds:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+
+    ClientWithSecretResponse:
+      type: object
+      description: |
+        OAuth-клиент с секретом. Секрет показывается один раз —
+        при создании или ротации.
+      allOf:
+        - $ref: '#/components/schemas/ClientResponse'
+        - type: object
+          properties:
+            clientSecret:
+              type: string
+              description: Секрет клиента (показывается однократно)
+
+    # ── Sessions ─────────────────────────────
+    SessionResponse:
+      type: object
+      description: Информация о SSO-сессии
+      properties:
+        sessionId:
+          type: string
+          description: Идентификатор сессии
+        userId:
+          type: string
+          format: uuid
+          description: Идентификатор пользователя
+        clientIds:
+          type: array
+          items:
+            type: string
+          description: Клиенты, авторизованные в этой сессии
+        createdAt:
+          type: string
+          format: date-time
+          description: Время создания сессии
+        lastActivityAt:
+          type: string
+          format: date-time
+          description: Время последней активности
+        expiresAt:
+          type: string
+          format: date-time
+          description: Время истечения сессии
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# KAFKA-СОБЫТИЯ
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Все события — CloudEvents.
+#
+# ── Топик: iam.auth.events ──────────────────
+#
+#   auth.token-issued
+#     Тело: { userId, clientId, grantType, scopes[], sessionId, timestamp }
+#     Публикуется при выдаче access_token.
+#
+#   auth.token-refreshed
+#     Тело: { userId, clientId, oldTokenId, newTokenId, timestamp }
+#     Публикуется при обновлении токена через refresh_token.
+#
+#   auth.token-revoked
+#     Тело: { userId, clientId, tokenType, reason, timestamp }
+#     Публикуется при отзыве токена.
+#
+#   auth.login-success
+#     Тело: { userId, clientId, ip, userAgent, mfaUsed, timestamp }
+#     Публикуется после успешной аутентификации (authorization_code flow).
+#
+#   auth.login-failed
+#     Тело: { email/username, clientId, ip, userAgent, reason, timestamp }
+#     Публикуется при неудачной попытке входа.
+#
+# ── Топик: iam.session.events ───────────────
+#
+#   session.created
+#     Тело: { sessionId, userId, clientId, ip, timestamp }
+#
+#   session.destroyed
+#     Тело: { sessionId, userId, reason, timestamp }
+#     reason: logout, expired, admin-revoke, logout-all
+#
+# ── Потребляет из: ──────────────────────────
+#   iam.user.events — user.deleted, user.status-changed
+#     Для отзыва токенов при блокировке/удалении пользователя.

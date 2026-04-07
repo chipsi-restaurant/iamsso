@@ -1,0 +1,1222 @@
+openapi: 3.1.0
+info:
+  title: User Service API
+  description: |
+    Микросервис управления учётными записями для IAM/SSO платформы.
+
+    Отвечает за жизненный цикл пользователей, учётные данные (credentials),
+    профили, MFA-факторы и подтверждение email.
+
+    **Потребители:** Auth Service, MFA Service, Admin UI
+    **Синхронное взаимодействие:** REST (JSON)
+    **Асинхронное взаимодействие:** Apache Kafka
+    **База данных:** PostgreSQL
+    **Стек:** Kotlin, Spring Boot 4, Java 25
+  version: 1.0.0
+  contact:
+    name: IAM Platform Team
+
+servers:
+  - url: http://localhost:8081
+    description: Локальная разработка
+  - url: http://user-service:8081
+    description: Внутренняя сеть Docker / Kubernetes
+
+tags:
+  - name: Users
+    description: CRUD и жизненный цикл учётных записей
+  - name: Credentials
+    description: Управление паролями и верификация
+  - name: MFA
+    description: Регистрация и управление факторами многофакторной аутентификации
+  - name: Profile
+    description: Данные профиля пользователя
+  - name: Internal
+    description: Межсервисные эндпоинты (не выставляются через API Gateway)
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ПУТИ (PATHS)
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+paths:
+
+  # ── Пользователи ───────────────────────────
+  /api/v1/users:
+    post:
+      operationId: createUser
+      tags: [Users]
+      summary: Регистрация нового пользователя
+      description: |
+        Создаёт пользователя по email или username + пароль.
+        Пароль хешируется на стороне сервера алгоритмом Argon2id.
+        При успехе публикует Kafka-событие `user.created`.
+        Отправляет команду `notification.email-verification` для подтверждения почты.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+            examples:
+              byEmail:
+                summary: Регистрация по email
+                value:
+                  email: "ivan@example.com"
+                  password: "SecureP@ss123"
+                  displayName: "Иван Иванов"
+                  locale: "ru"
+              byUsername:
+                summary: Регистрация по username
+                value:
+                  username: "ivan_dev"
+                  email: "ivan@example.com"
+                  password: "SecureP@ss123"
+      responses:
+        '201':
+          description: Пользователь создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '409':
+          description: Email или username уже заняты
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                code: "USER_ALREADY_EXISTS"
+                message: "Пользователь с таким email уже существует"
+                traceId: "abc-123-def"
+        '422':
+          description: Ошибка валидации входных данных
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    get:
+      operationId: listUsers
+      tags: [Users]
+      summary: Список пользователей (админ / внутренний)
+      description: |
+        Постраничный вывод пользователей с возможностью фильтрации
+        по статусу и текстового поиска по email, username, displayName.
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+        - name: status
+          in: query
+          description: Фильтр по статусу учётной записи
+          schema:
+            $ref: '#/components/schemas/UserStatus'
+        - name: q
+          in: query
+          description: Поиск по email, username или displayName (ILIKE)
+          schema:
+            type: string
+            maxLength: 100
+      responses:
+        '200':
+          description: Постраничный список пользователей
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedUserResponse'
+
+  /api/v1/users/{userId}:
+    parameters:
+      - $ref: '#/components/parameters/UserIdParam'
+
+    get:
+      operationId: getUserById
+      tags: [Users]
+      summary: Получить пользователя по ID
+      responses:
+        '200':
+          description: Пользователь найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      operationId: updateUser
+      tags: [Users]
+      summary: Частичное обновление пользователя
+      description: |
+        Обновляет переданные поля. Не переданные поля остаются без изменений.
+        При смене email сбрасывает флаг emailVerified и запускает повторную верификацию.
+        Публикует Kafka-событие `user.updated`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+      responses:
+        '200':
+          description: Пользователь обновлён
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Конфликт — email или username уже заняты другим пользователем
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      operationId: deleteUser
+      tags: [Users]
+      summary: Мягкое удаление (деактивация) пользователя
+      description: |
+        Устанавливает статус DELETED. Фактическое удаление данных
+        выполняется отложенной задачей (GDPR compliance).
+        Публикует Kafka-событие `user.deleted`.
+      responses:
+        '204':
+          description: Пользователь деактивирован
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/users/{userId}/status:
+    parameters:
+      - $ref: '#/components/parameters/UserIdParam'
+    put:
+      operationId: changeUserStatus
+      tags: [Users]
+      summary: Смена статуса учётной записи
+      description: |
+        Административный / внутренний эндпоинт для блокировки,
+        приостановки или активации учётной записи.
+        Обязательно указывается причина для аудита.
+        Публикует Kafka-событие `user.status-changed`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangeStatusRequest'
+            example:
+              status: "LOCKED"
+              reason: "Превышено количество неудачных попыток входа"
+      responses:
+        '200':
+          description: Статус изменён
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ── Поиск (внутренний, для Auth Service) ───
+  /api/v1/users/by-email/{email}:
+    get:
+      operationId: getUserByEmail
+      tags: [Internal]
+      summary: Поиск пользователя по email
+      description: |
+        Используется Auth Service при логине для получения данных пользователя.
+        Не выставляется через API Gateway.
+      parameters:
+        - name: email
+          in: path
+          required: true
+          description: Email пользователя
+          schema:
+            type: string
+            format: email
+      responses:
+        '200':
+          description: Пользователь найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/users/by-username/{username}:
+    get:
+      operationId: getUserByUsername
+      tags: [Internal]
+      summary: Поиск пользователя по username
+      description: |
+        Используется Auth Service при логине, если пользователь
+        вводит username вместо email. Не выставляется через API Gateway.
+      parameters:
+        - name: username
+          in: path
+          required: true
+          description: Имя пользователя (логин)
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Пользователь найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ── Учётные данные (Credentials) ───────────
+  /api/v1/users/{userId}/credentials/verify:
+    parameters:
+      - $ref: '#/components/parameters/UserIdParam'
+    post:
+      operationId: verifyCredentials
+      tags: [Credentials, Internal]
+      summary: Проверка пароля пользователя
+      description: |
+        Вызывается Auth Service в процессе аутентификации.
+        User Service сам сравнивает пароль с хешем — Auth Service
+        никогда не получает хеш напрямую.
+
+        При неудачной проверке:
+        - Инкрементирует счётчик неудачных попыток
+        - Публикует Kafka-событие `credentials.verify-failed`
+        - При превышении лимита (по умолчанию 5) — автоматически блокирует аккаунт
+
+        Возвращает флаг mfaRequired, чтобы Auth Service знал,
+        нужно ли запрашивать второй фактор.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyCredentialsRequest'
+      responses:
+        '200':
+          description: Результат проверки
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CredentialsVerificationResponse'
+              examples:
+                success:
+                  summary: Пароль верный, MFA не требуется
+                  value:
+                    valid: true
+                    userId: "550e8400-e29b-41d4-a716-446655440000"
+                    status: "ACTIVE"
+                    mfaRequired: false
+                    failedAttempts: 0
+                    lockedUntil: null
+                successWithMfa:
+                  summary: Пароль верный, требуется MFA
+                  value:
+                    valid: true
+                    userId: "550e8400-e29b-41d4-a716-446655440000"
+                    status: "ACTIVE"
+                    mfaRequired: true
+                    failedAttempts: 0
+                    lockedUntil: null
+                failed:
+                  summary: Неверный пароль
+                  value:
+                    valid: false
+                    userId: "550e8400-e29b-41d4-a716-446655440000"
+                    status: "ACTIVE"
+                    mfaRequired: false
+                    failedAttempts: 3
+                    lockedUntil: null
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/users/{userId}/credentials/password:
+    parameters:
+      - $ref: '#/components/parameters/UserIdParam'
+    put:
+      operationId: changePassword
+      tags: [Credentials]
+      summary: Смена пароля
+      description: |
+        Пользователь меняет пароль, указывая текущий и новый.
+        Текущий пароль обязательно проверяется перед сменой.
+        Публикует Kafka-событие `credentials.password-changed`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+      responses:
+        '204':
+          description: Пароль успешно изменён
+        '400':
+          description: Текущий пароль неверен или новый пароль не соответствует требованиям
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                code: "INVALID_CURRENT_PASSWORD"
+                message: "Текущий пароль указан неверно"
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/users/{userId}/credentials/password/reset:
+    parameters:
+      - $ref: '#/components/parameters/UserIdParam'
+    post:
+      operationId: resetPassword
+      tags: [Credentials, Internal]
+      summary: Принудительная установка нового пароля
+      description: |
+        Устанавливает новый пароль без проверки старого.
+        Используется после прохождения flow сброса пароля (по токену из письма)
+        или администратором.
+        Сбрасывает счётчик неудачных попыток и снимает блокировку.
+        Публикует Kafka-событие `credentials.password-reset`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetPasswordRequest'
+      responses:
+        '204':
+          description: Пароль сброшен
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ── MFA-факторы ────────────────────────────
+  /api/v1/users/{userId}/mfa/factors:
+    parameters:
+      - $ref: '#/components/parameters/UserIdParam'
+
+    get:
+      operationId: listMfaFactors
+      tags: [MFA]
+      summary: Список зарегистрированных MFA-факторов
+      description: |
+        Возвращает все факторы пользователя — и активные, и ожидающие подтверждения.
+      responses:
+        '200':
+          description: Список факторов
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MfaFactorResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    post:
+      operationId: enrollMfaFactor
+      tags: [MFA]
+      summary: Начать регистрацию MFA-фактора
+      description: |
+        Инициирует подключение нового фактора аутентификации.
+
+        **TOTP:** Генерирует секрет, возвращает его в Base32 и provisioning URI
+        (otpauth://) для сканирования QR-кода приложением-аутентификатором.
+
+        **EMAIL_OTP:** Отправляет 6-значный код на email пользователя
+        через Notification Service (Kafka-команда).
+
+        Фактор остаётся в статусе PENDING до подтверждения кодом.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EnrollMfaRequest'
+            examples:
+              totp:
+                summary: Подключение TOTP (Google Authenticator)
+                value:
+                  factorType: "TOTP"
+                  displayName: "Мой аутентификатор"
+              emailOtp:
+                summary: Подключение OTP по email
+                value:
+                  factorType: "EMAIL_OTP"
+      responses:
+        '201':
+          description: Регистрация начата
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MfaEnrollmentResponse'
+              examples:
+                totpEnrollment:
+                  summary: Ответ для TOTP
+                  value:
+                    factorId: "660e8400-e29b-41d4-a716-446655440001"
+                    factorType: "TOTP"
+                    status: "PENDING"
+                    secret: "JBSWY3DPEHPK3PXP"
+                    provisioningUri: "otpauth://totp/IAM:ivan@example.com?secret=JBSWY3DPEHPK3PXP&issuer=IAM"
+                emailOtpEnrollment:
+                  summary: Ответ для EMAIL_OTP (код отправлен на почту)
+                  value:
+                    factorId: "770e8400-e29b-41d4-a716-446655440002"
+                    factorType: "EMAIL_OTP"
+                    status: "PENDING"
+                    secret: null
+                    provisioningUri: null
+        '409':
+          description: Фактор данного типа уже зарегистрирован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/users/{userId}/mfa/factors/{factorId}/verify:
+    parameters:
+      - $ref: '#/components/parameters/UserIdParam'
+      - $ref: '#/components/parameters/FactorIdParam'
+    post:
+      operationId: confirmMfaFactor
+      tags: [MFA]
+      summary: Подтверждение MFA-фактора кодом
+      description: |
+        Проверяет 6-значный код и активирует фактор.
+        Для TOTP — проверяет код через HMAC-SHA1 с учётом временного окна.
+        Для EMAIL_OTP — проверяет код, отправленный на почту.
+        Публикует Kafka-событие `mfa.factor-enrolled`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyMfaCodeRequest'
+      responses:
+        '200':
+          description: Фактор подтверждён и активирован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MfaFactorResponse'
+        '400':
+          description: Неверный или просроченный код
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                code: "INVALID_MFA_CODE"
+                message: "Указан неверный код подтверждения"
+
+  /api/v1/users/{userId}/mfa/factors/{factorId}:
+    parameters:
+      - $ref: '#/components/parameters/UserIdParam'
+      - $ref: '#/components/parameters/FactorIdParam'
+    delete:
+      operationId: removeMfaFactor
+      tags: [MFA]
+      summary: Удаление MFA-фактора
+      description: |
+        Удаляет зарегистрированный фактор. Если это был единственный
+        активный фактор — MFA фактически отключается.
+        Публикует Kafka-событие `mfa.factor-removed`.
+      responses:
+        '204':
+          description: Фактор удалён
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/users/{userId}/mfa/status:
+    parameters:
+      - $ref: '#/components/parameters/UserIdParam'
+    get:
+      operationId: getMfaStatus
+      tags: [MFA, Internal]
+      summary: Статус MFA для пользователя
+      description: |
+        Возвращает, включена ли MFA и какие типы факторов активны.
+        Используется Auth Service при аутентификации для принятия решения
+        о необходимости запроса второго фактора.
+      responses:
+        '200':
+          description: Статус MFA
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MfaStatusResponse'
+              example:
+                userId: "550e8400-e29b-41d4-a716-446655440000"
+                mfaEnabled: true
+                activeFactors: ["TOTP"]
+
+  # ── Профиль ────────────────────────────────
+  /api/v1/users/{userId}/profile:
+    parameters:
+      - $ref: '#/components/parameters/UserIdParam'
+
+    get:
+      operationId: getUserProfile
+      tags: [Profile]
+      summary: Получить профиль пользователя
+      responses:
+        '200':
+          description: Профиль пользователя
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      operationId: updateUserProfile
+      tags: [Profile]
+      summary: Обновить профиль пользователя
+      description: |
+        Частичное обновление профильных данных.
+        Публикует Kafka-событие `user.profile-updated`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProfileRequest'
+      responses:
+        '200':
+          description: Профиль обновлён
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ── Подтверждение email ────────────────────
+  /api/v1/users/{userId}/email/verify:
+    parameters:
+      - $ref: '#/components/parameters/UserIdParam'
+    post:
+      operationId: verifyEmail
+      tags: [Users]
+      summary: Подтверждение email по токену
+      description: |
+        Пользователь переходит по ссылке из письма, клиент отправляет токен сюда.
+        При успехе устанавливает emailVerified = true и переводит статус
+        из PENDING_VERIFICATION в ACTIVE (если не было других блокировок).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyEmailRequest'
+      responses:
+        '200':
+          description: Email подтверждён
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '400':
+          description: Невалидный или истёкший токен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                code: "INVALID_VERIFICATION_TOKEN"
+                message: "Токен подтверждения недействителен или истёк"
+
+  /api/v1/users/{userId}/email/resend-verification:
+    parameters:
+      - $ref: '#/components/parameters/UserIdParam'
+    post:
+      operationId: resendEmailVerification
+      tags: [Users]
+      summary: Повторная отправка письма для подтверждения email
+      description: |
+        Генерирует новый токен и публикует Kafka-команду
+        `notification.email-verification` для Notification Service.
+        Ограничение: не чаще 1 раза в 60 секунд.
+      responses:
+        '202':
+          description: Письмо поставлено в очередь на отправку
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          description: Слишком частые запросы
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                code: "RATE_LIMIT_EXCEEDED"
+                message: "Повторная отправка возможна через 45 секунд"
+
+  # ── Проверка состояния ─────────────────────
+  /actuator/health:
+    get:
+      operationId: healthCheck
+      tags: [Internal]
+      summary: Проверка состояния сервиса
+      description: |
+        Стандартный Spring Boot Actuator health-эндпоинт.
+        Проверяет подключение к PostgreSQL и Kafka.
+      responses:
+        '200':
+          description: Сервис работает нормально
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# КОМПОНЕНТЫ (COMPONENTS)
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+components:
+
+  # ── Параметры ──────────────────────────────
+  parameters:
+    UserIdParam:
+      name: userId
+      in: path
+      required: true
+      description: Уникальный идентификатор пользователя (UUID v7)
+      schema:
+        type: string
+        format: uuid
+
+    FactorIdParam:
+      name: factorId
+      in: path
+      required: true
+      description: Уникальный идентификатор MFA-фактора (UUID v7)
+      schema:
+        type: string
+        format: uuid
+
+    PageParam:
+      name: page
+      in: query
+      description: Номер страницы (начиная с 0)
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+
+    SizeParam:
+      name: size
+      in: query
+      description: Размер страницы
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+
+  # ── Стандартные ответы ─────────────────────
+  responses:
+    NotFound:
+      description: Ресурс не найден
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            code: "USER_NOT_FOUND"
+            message: "Пользователь не найден"
+            traceId: "abc-123-def"
+
+  # ── Схемы данных (Schemas) ─────────────────
+  schemas:
+
+    # ── Перечисления ───────────────────────
+    UserStatus:
+      type: string
+      description: |
+        Статус учётной записи:
+        - `PENDING_VERIFICATION` — email не подтверждён, вход запрещён
+        - `ACTIVE` — активна, аутентификация разрешена
+        - `LOCKED` — временно заблокирована (превышение попыток входа)
+        - `SUSPENDED` — приостановлена администратором
+        - `DELETED` — мягко удалена, ожидает полного удаления данных
+      enum:
+        - PENDING_VERIFICATION
+        - ACTIVE
+        - LOCKED
+        - SUSPENDED
+        - DELETED
+
+    MfaFactorType:
+      type: string
+      description: |
+        Тип MFA-фактора:
+        - `TOTP` — одноразовый код на основе времени (RFC 6238), Google Authenticator и аналоги
+        - `EMAIL_OTP` — одноразовый код, отправляемый на email пользователя
+      enum:
+        - TOTP
+        - EMAIL_OTP
+
+    MfaFactorStatus:
+      type: string
+      description: |
+        Статус MFA-фактора:
+        - `PENDING` — ожидает подтверждения (код ещё не введён)
+        - `ACTIVE` — подтверждён и используется при аутентификации
+      enum:
+        - PENDING
+        - ACTIVE
+
+    # ── Запросы (Request DTO) ──────────────
+    CreateUserRequest:
+      type: object
+      required:
+        - password
+      description: |
+        Запрос на создание пользователя.
+        Обязательно должен содержать хотя бы одно из полей: email или username.
+        Валидация этого правила выполняется на уровне сервиса.
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 255
+          description: Email пользователя. Обязателен, если не указан username.
+        username:
+          type: string
+          pattern: '^[a-zA-Z0-9_-]{3,32}$'
+          description: |
+            Логин пользователя (3–32 символа: латиница, цифры, дефис, подчёркивание).
+            Обязателен, если не указан email.
+        password:
+          type: string
+          format: password
+          minLength: 8
+          maxLength: 128
+          description: |
+            Пароль в открытом виде. Хешируется на сервере алгоритмом Argon2id.
+            Требования: минимум 8 символов.
+        displayName:
+          type: string
+          maxLength: 100
+          description: Отображаемое имя пользователя
+        locale:
+          type: string
+          default: 'en'
+          maxLength: 10
+          description: Локаль пользователя (например, ru, en)
+
+    UpdateUserRequest:
+      type: object
+      description: Частичное обновление данных пользователя. Передаются только изменяемые поля.
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 255
+          description: Новый email (потребует повторного подтверждения)
+        username:
+          type: string
+          pattern: '^[a-zA-Z0-9_-]{3,32}$'
+          description: Новый username
+        displayName:
+          type: string
+          maxLength: 100
+          description: Новое отображаемое имя
+        locale:
+          type: string
+          maxLength: 10
+          description: Новая локаль
+
+    ChangeStatusRequest:
+      type: object
+      required:
+        - status
+        - reason
+      description: Запрос на смену статуса учётной записи
+      properties:
+        status:
+          $ref: '#/components/schemas/UserStatus'
+        reason:
+          type: string
+          maxLength: 500
+          description: Причина смены статуса (сохраняется в аудит-лог)
+
+    VerifyCredentialsRequest:
+      type: object
+      required:
+        - password
+      description: |
+        Запрос на проверку пароля.
+        Используется Auth Service при аутентификации.
+        Пароль передаётся по защищённому внутреннему каналу (mTLS).
+      properties:
+        password:
+          type: string
+          format: password
+          description: Пароль в открытом виде для сравнения с хешем
+
+    ChangePasswordRequest:
+      type: object
+      required:
+        - currentPassword
+        - newPassword
+      description: Запрос на смену пароля (требует подтверждение текущим паролем)
+      properties:
+        currentPassword:
+          type: string
+          format: password
+          description: Текущий пароль для подтверждения
+        newPassword:
+          type: string
+          format: password
+          minLength: 8
+          maxLength: 128
+          description: Новый пароль
+
+    ResetPasswordRequest:
+      type: object
+      required:
+        - newPassword
+      description: |
+        Принудительная установка пароля без проверки старого.
+        Используется после flow сброса пароля или администратором.
+      properties:
+        newPassword:
+          type: string
+          format: password
+          minLength: 8
+          maxLength: 128
+          description: Новый пароль
+
+    EnrollMfaRequest:
+      type: object
+      required:
+        - factorType
+      description: Запрос на регистрацию нового MFA-фактора
+      properties:
+        factorType:
+          $ref: '#/components/schemas/MfaFactorType'
+        displayName:
+          type: string
+          maxLength: 100
+          description: Пользовательское название фактора (например, «Мой аутентификатор»)
+
+    VerifyMfaCodeRequest:
+      type: object
+      required:
+        - code
+      description: Запрос на подтверждение MFA-фактора одноразовым кодом
+      properties:
+        code:
+          type: string
+          pattern: '^\d{6}$'
+          description: 6-значный код подтверждения
+
+    VerifyEmailRequest:
+      type: object
+      required:
+        - token
+      description: Запрос на подтверждение email по токену из письма
+      properties:
+        token:
+          type: string
+          description: Токен подтверждения email (UUID или JWT)
+
+    UpdateProfileRequest:
+      type: object
+      description: Частичное обновление профиля. Передаются только изменяемые поля.
+      properties:
+        displayName:
+          type: string
+          maxLength: 100
+          description: Отображаемое имя
+        firstName:
+          type: string
+          maxLength: 50
+          description: Имя
+        lastName:
+          type: string
+          maxLength: 50
+          description: Фамилия
+        avatarUrl:
+          type: string
+          format: uri
+          maxLength: 500
+          description: Ссылка на аватар
+        timezone:
+          type: string
+          maxLength: 50
+          description: Часовой пояс в формате IANA (например, Europe/Moscow)
+        locale:
+          type: string
+          maxLength: 10
+          description: Локаль (например, ru)
+
+    # ── Ответы (Response DTO) ──────────────
+    UserResponse:
+      type: object
+      description: Представление пользователя в ответах API
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Уникальный идентификатор (UUID v7)
+        email:
+          type: string
+          format: email
+          description: Email пользователя
+        username:
+          type: string
+          description: Логин пользователя
+        displayName:
+          type: string
+          description: Отображаемое имя
+        status:
+          $ref: '#/components/schemas/UserStatus'
+        emailVerified:
+          type: boolean
+          description: Подтверждён ли email
+        mfaEnabled:
+          type: boolean
+          description: Включена ли многофакторная аутентификация
+        locale:
+          type: string
+          description: Локаль пользователя
+        createdAt:
+          type: string
+          format: date-time
+          description: Дата и время создания (ISO 8601)
+        updatedAt:
+          type: string
+          format: date-time
+          description: Дата и время последнего обновления (ISO 8601)
+
+    PagedUserResponse:
+      type: object
+      description: Постраничный ответ со списком пользователей
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserResponse'
+          description: Список пользователей на текущей странице
+        page:
+          type: integer
+          description: Номер текущей страницы
+        size:
+          type: integer
+          description: Размер страницы
+        totalElements:
+          type: integer
+          format: int64
+          description: Общее количество пользователей
+        totalPages:
+          type: integer
+          description: Общее количество страниц
+
+    CredentialsVerificationResponse:
+      type: object
+      description: |
+        Результат проверки учётных данных.
+        Возвращается Auth Service для принятия решения о выдаче токенов.
+      properties:
+        valid:
+          type: boolean
+          description: Верен ли пароль
+        userId:
+          type: string
+          format: uuid
+          description: Идентификатор пользователя
+        status:
+          $ref: '#/components/schemas/UserStatus'
+        mfaRequired:
+          type: boolean
+          description: Требуется ли прохождение MFA (есть активные факторы)
+        failedAttempts:
+          type: integer
+          description: Текущее количество неудачных попыток входа
+        lockedUntil:
+          type: string
+          format: date-time
+          nullable: true
+          description: Время окончания временной блокировки (null, если не заблокирован)
+
+    MfaFactorResponse:
+      type: object
+      description: Представление зарегистрированного MFA-фактора
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Идентификатор фактора
+        factorType:
+          $ref: '#/components/schemas/MfaFactorType'
+        status:
+          $ref: '#/components/schemas/MfaFactorStatus'
+        displayName:
+          type: string
+          description: Пользовательское название
+        createdAt:
+          type: string
+          format: date-time
+          description: Дата и время регистрации
+
+    MfaEnrollmentResponse:
+      type: object
+      description: |
+        Ответ при начале регистрации MFA-фактора.
+        Поля secret и provisioningUri заполняются только для TOTP.
+      properties:
+        factorId:
+          type: string
+          format: uuid
+          description: Идентификатор созданного фактора
+        factorType:
+          $ref: '#/components/schemas/MfaFactorType'
+        status:
+          $ref: '#/components/schemas/MfaFactorStatus'
+        secret:
+          type: string
+          nullable: true
+          description: |
+            Base32-кодированный секрет TOTP (только для типа TOTP).
+            Используется приложением-аутентификатором для генерации кодов.
+        provisioningUri:
+          type: string
+          nullable: true
+          description: |
+            URI формата otpauth://totp/... для генерации QR-кода (только для типа TOTP).
+
+    MfaStatusResponse:
+      type: object
+      description: Сводный статус MFA для пользователя
+      properties:
+        userId:
+          type: string
+          format: uuid
+          description: Идентификатор пользователя
+        mfaEnabled:
+          type: boolean
+          description: Есть ли хотя бы один активный фактор
+        activeFactors:
+          type: array
+          items:
+            $ref: '#/components/schemas/MfaFactorType'
+          description: Список типов активных факторов
+
+    UserProfileResponse:
+      type: object
+      description: Профильные данные пользователя
+      properties:
+        userId:
+          type: string
+          format: uuid
+          description: Идентификатор пользователя
+        displayName:
+          type: string
+          description: Отображаемое имя
+        firstName:
+          type: string
+          description: Имя
+        lastName:
+          type: string
+          description: Фамилия
+        avatarUrl:
+          type: string
+          description: Ссылка на аватар
+        timezone:
+          type: string
+          description: Часовой пояс (IANA)
+        locale:
+          type: string
+          description: Локаль
+        updatedAt:
+          type: string
+          format: date-time
+          description: Дата и время последнего обновления профиля
+
+    ErrorResponse:
+      type: object
+      required:
+        - code
+        - message
+      description: Стандартный формат ошибки для всех эндпоинтов
+      properties:
+        code:
+          type: string
+          description: |
+            Машиночитаемый код ошибки.
+            Примеры: USER_NOT_FOUND, USER_ALREADY_EXISTS,
+            INVALID_CURRENT_PASSWORD, INVALID_MFA_CODE,
+            RATE_LIMIT_EXCEEDED, VALIDATION_ERROR
+        message:
+          type: string
+          description: Человекочитаемое сообщение об ошибке
+        details:
+          type: object
+          additionalProperties: true
+          description: |
+            Дополнительный контекст. Для ошибок валидации содержит
+            маппинг «поле → описание ошибки».
+        traceId:
+          type: string
+          description: Идентификатор трассировки для отладки (OpenTelemetry Trace ID)
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# KAFKA-СОБЫТИЯ
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Все события сериализуются в JSON и содержат заголовки CloudEvents:
+#   ce_type   — тип события
+#   ce_source — "user-service"
+#   ce_id     — UUID события
+#   ce_time   — временная метка ISO 8601
+#
+# ── Топик: iam.user.events ──────────────────
+#
+#   user.created
+#     Тело: { userId, email, username, status, timestamp }
+#     Публикуется при регистрации нового пользователя.
+#
+#   user.updated
+#     Тело: { userId, changedFields[], timestamp }
+#     Публикуется при изменении данных пользователя (email, username, displayName).
+#
+#   user.deleted
+#     Тело: { userId, timestamp }
+#     Публикуется при мягком удалении учётной записи.
+#
+#   user.status-changed
+#     Тело: { userId, oldStatus, newStatus, reason, timestamp }
+#     Публикуется при любой смене статуса (блокировка, активация, приостановка и т.д.).
+#
+#   user.profile-updated
+#     Тело: { userId, changedFields[], timestamp }
+#     Публикуется при обновлении профильных данных.
+#
+# ── Топик: iam.credentials.events ───────────
+#
+#   credentials.verify-failed
+#     Тело: { userId, failedAttempts, ip, userAgent, timestamp }
+#     Публикуется при неудачной проверке пароля. Потребитель — Audit Service.
+#
+#   credentials.password-changed
+#     Тело: { userId, timestamp }
+#     Публикуется при успешной смене пароля пользователем.
+#
+#   credentials.password-reset
+#     Тело: { userId, initiatedBy, timestamp }
+#     Публикуется при принудительном сбросе пароля (администратором или через flow восстановления).
+#
+# ── Топик: iam.mfa.events ───────────────────
+#
+#   mfa.factor-enrolled
+#     Тело: { userId, factorId, factorType, timestamp }
+#     Публикуется при успешном подтверждении нового MFA-фактора.
+#
+#   mfa.factor-removed
+#     Тело: { userId, factorId, factorType, timestamp }
+#     Публикуется при удалении MFA-фактора.
+#
+# ── Топик: iam.notification.commands ────────
+#
+#   notification.email-verification
+#     Тело: { userId, email, token, expiresAt, timestamp }
+#     Команда для Notification Service — отправить письмо
+#     со ссылкой для подтверждения email.

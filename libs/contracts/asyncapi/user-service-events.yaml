@@ -1,0 +1,336 @@
+asyncapi: 3.0.0
+info:
+  title: IAM Platform — события User Service
+  version: 1.0.0
+  description: |
+    Асинхронные события и команды, публикуемые User Service в Apache Kafka.
+    Формат сообщений соответствует спецификации CloudEvents v1.0.
+
+defaultContentType: application/json
+
+servers:
+  development:
+    host: localhost:9092
+    protocol: kafka
+    description: Локальный Kafka-брокер
+
+channels:
+  userEvents:
+    address: iam.user.events
+    description: События жизненного цикла пользователей
+    messages:
+      userCreated:
+        $ref: '#/components/messages/UserCreated'
+      userUpdated:
+        $ref: '#/components/messages/UserUpdated'
+      userDeleted:
+        $ref: '#/components/messages/UserDeleted'
+      userStatusChanged:
+        $ref: '#/components/messages/UserStatusChanged'
+      userProfileUpdated:
+        $ref: '#/components/messages/UserProfileUpdated'
+
+  credentialsEvents:
+    address: iam.credentials.events
+    description: События, связанные с учётными данными (паролями)
+    messages:
+      credentialsVerifyFailed:
+        $ref: '#/components/messages/CredentialsVerifyFailed'
+      credentialsPasswordChanged:
+        $ref: '#/components/messages/CredentialsPasswordChanged'
+      credentialsPasswordReset:
+        $ref: '#/components/messages/CredentialsPasswordReset'
+
+  mfaEvents:
+    address: iam.mfa.events
+    description: События MFA-факторов
+    messages:
+      mfaFactorEnrolled:
+        $ref: '#/components/messages/MfaFactorEnrolled'
+      mfaFactorRemoved:
+        $ref: '#/components/messages/MfaFactorRemoved'
+
+  notificationCommands:
+    address: iam.notification.commands
+    description: Команды для Notification Service (отправка писем, уведомлений)
+    messages:
+      sendEmailVerification:
+        $ref: '#/components/messages/SendEmailVerification'
+      sendEmailOtp:
+        $ref: '#/components/messages/SendEmailOtp'
+
+operations:
+  publishUserEvents:
+    action: send
+    channel:
+      $ref: '#/channels/userEvents'
+    summary: User Service публикует события пользователей
+
+  publishCredentialsEvents:
+    action: send
+    channel:
+      $ref: '#/channels/credentialsEvents'
+    summary: User Service публикует события учётных данных
+
+  publishMfaEvents:
+    action: send
+    channel:
+      $ref: '#/channels/mfaEvents'
+    summary: User Service публикует события MFA
+
+  publishNotificationCommands:
+    action: send
+    channel:
+      $ref: '#/channels/notificationCommands'
+    summary: User Service отправляет команды на отправку уведомлений
+
+components:
+  messages:
+    UserCreated:
+      name: user.created
+      title: Пользователь зарегистрирован
+      description: Публикуется при успешной регистрации нового пользователя
+      payload:
+        type: object
+        required: [userId, status, timestamp]
+        properties:
+          userId:
+            type: string
+            format: uuid
+            description: Идентификатор пользователя
+          email:
+            type: string
+            format: email
+            description: Email (может быть null)
+          username:
+            type: string
+            description: Логин (может быть null)
+          status:
+            type: string
+            description: Начальный статус (PENDING_VERIFICATION)
+          timestamp:
+            type: string
+            format: date-time
+            description: Временная метка события
+
+    UserUpdated:
+      name: user.updated
+      title: Данные пользователя обновлены
+      description: Публикуется при изменении email, username или displayName
+      payload:
+        type: object
+        required: [userId, changedFields, timestamp]
+        properties:
+          userId:
+            type: string
+            format: uuid
+          changedFields:
+            type: array
+            items:
+              type: string
+            description: Список изменённых полей
+          timestamp:
+            type: string
+            format: date-time
+
+    UserDeleted:
+      name: user.deleted
+      title: Пользователь мягко удалён
+      description: Публикуется при переводе статуса в DELETED
+      payload:
+        type: object
+        required: [userId, timestamp]
+        properties:
+          userId:
+            type: string
+            format: uuid
+          timestamp:
+            type: string
+            format: date-time
+
+    UserStatusChanged:
+      name: user.status-changed
+      title: Статус учётной записи изменён
+      description: Публикуется при любой смене статуса (блокировка, активация и т.д.)
+      payload:
+        type: object
+        required: [userId, oldStatus, newStatus, reason, timestamp]
+        properties:
+          userId:
+            type: string
+            format: uuid
+          oldStatus:
+            type: string
+            description: Предыдущий статус
+          newStatus:
+            type: string
+            description: Новый статус
+          reason:
+            type: string
+            description: Причина смены (для аудит-лога)
+          timestamp:
+            type: string
+            format: date-time
+
+    UserProfileUpdated:
+      name: user.profile-updated
+      title: Профиль пользователя обновлён
+      payload:
+        type: object
+        required: [userId, changedFields, timestamp]
+        properties:
+          userId:
+            type: string
+            format: uuid
+          changedFields:
+            type: array
+            items:
+              type: string
+          timestamp:
+            type: string
+            format: date-time
+
+    CredentialsVerifyFailed:
+      name: credentials.verify-failed
+      title: Неудачная проверка пароля
+      description: |
+        Публикуется при каждой неудачной попытке входа.
+        Потребитель — Audit Service (для обнаружения brute-force атак).
+      payload:
+        type: object
+        required: [userId, failedAttempts, timestamp]
+        properties:
+          userId:
+            type: string
+            format: uuid
+          failedAttempts:
+            type: integer
+            description: Текущее количество неудачных попыток
+          ip:
+            type: string
+            description: IP-адрес клиента
+          userAgent:
+            type: string
+            description: User-Agent клиента
+          timestamp:
+            type: string
+            format: date-time
+
+    CredentialsPasswordChanged:
+      name: credentials.password-changed
+      title: Пароль изменён пользователем
+      payload:
+        type: object
+        required: [userId, timestamp]
+        properties:
+          userId:
+            type: string
+            format: uuid
+          timestamp:
+            type: string
+            format: date-time
+
+    CredentialsPasswordReset:
+      name: credentials.password-reset
+      title: Пароль принудительно сброшен
+      description: Публикуется при сбросе пароля администратором или через flow восстановления
+      payload:
+        type: object
+        required: [userId, initiatedBy, timestamp]
+        properties:
+          userId:
+            type: string
+            format: uuid
+          initiatedBy:
+            type: string
+            description: Кто инициировал сброс (admin, password-reset-flow)
+          timestamp:
+            type: string
+            format: date-time
+
+    MfaFactorEnrolled:
+      name: mfa.factor-enrolled
+      title: MFA-фактор подтверждён и активирован
+      payload:
+        type: object
+        required: [userId, factorId, factorType, timestamp]
+        properties:
+          userId:
+            type: string
+            format: uuid
+          factorId:
+            type: string
+            format: uuid
+          factorType:
+            type: string
+            enum: [TOTP, EMAIL_OTP]
+          timestamp:
+            type: string
+            format: date-time
+
+    MfaFactorRemoved:
+      name: mfa.factor-removed
+      title: MFA-фактор удалён
+      payload:
+        type: object
+        required: [userId, factorId, factorType, timestamp]
+        properties:
+          userId:
+            type: string
+            format: uuid
+          factorId:
+            type: string
+            format: uuid
+          factorType:
+            type: string
+            enum: [TOTP, EMAIL_OTP]
+          timestamp:
+            type: string
+            format: date-time
+
+    SendEmailVerification:
+      name: notification.email-verification
+      title: Команда — отправить письмо для подтверждения email
+      payload:
+        type: object
+        required: [userId, email, token, expiresAt, timestamp]
+        properties:
+          userId:
+            type: string
+            format: uuid
+          email:
+            type: string
+            format: email
+          token:
+            type: string
+            description: Токен подтверждения
+          expiresAt:
+            type: string
+            format: date-time
+            description: Срок действия токена
+          timestamp:
+            type: string
+            format: date-time
+
+    SendEmailOtp:
+      name: notification.email-otp
+      title: Команда — отправить OTP-код на email
+      payload:
+        type: object
+        required: [userId, email, code, expiresAt, timestamp]
+        properties:
+          userId:
+            type: string
+            format: uuid
+          email:
+            type: string
+            format: email
+          code:
+            type: string
+            description: 6-значный OTP-код
+          expiresAt:
+            type: string
+            format: date-time
+          timestamp:
+            type: string
+            format: date-time

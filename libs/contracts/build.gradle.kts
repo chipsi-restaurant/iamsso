@@ -162,3 +162,11 @@ publishing {
 tasks.test {
     useJUnitPlatform()
 }
+
+tasks.named("bootJar") {
+    enabled = false
+}
+
+tasks.named("jar") {
+    enabled = true
+}
