@@ -1,0 +1,152 @@
+databaseChangeLog:
+  - changeSet:
+      id: 001-create-schema
+      author: Arseniy Kolyshkin
+      changes:
+        - sql:
+            sql: CREATE SCHEMA IF NOT EXISTS iamsso_policies
+
+  - changeSet:
+      id: 001-create-roles
+      author: Arseniy Kolyshkin
+      changes:
+        - createTable:
+            schemaName: iamsso_policies
+            tableName: roles
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: name
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: description
+                  type: varchar(255)
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 001-create-policies
+      author: Arseniy Kolyshkin
+      changes:
+        - createTable:
+            schemaName: iamsso_policies
+            tableName: policies
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: name
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: description
+                  type: varchar(255)
+              - column:
+                  name: role
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_policy_role
+                    references: iamsso_policies.roles(name)
+              - column:
+                  name: effect
+                  type: varchar(10)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: action
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: resource_pattern
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: conditions
+                  type: jsonb
+              - column:
+                  name: priority
+                  type: int
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: enabled
+                  type: boolean
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - createIndex:
+            schemaName: iamsso_policies
+            tableName: policies
+            indexName: idx_policies_role
+            columns:
+              - column: { name: role }
+        - createIndex:
+            schemaName: iamsso_policies
+            tableName: policies
+            indexName: idx_policies_enabled
+            columns:
+              - column: { name: enabled }
+
+  - changeSet:
+      id: 001-seed-default-roles
+      author: Arseniy Kolyshkin
+      changes:
+        - insert:
+            schemaName: iamsso_policies
+            tableName: roles
+            columns:
+              - column: { name: id, valueComputed: "gen_random_uuid()" }
+              - column: { name: name, value: "user" }
+              - column: { name: description, value: "Default user role" }
+        - insert:
+            schemaName: iamsso_policies
+            tableName: roles
+            columns:
+              - column: { name: id, valueComputed: "gen_random_uuid()" }
+              - column: { name: name, value: "admin" }
+              - column: { name: description, value: "Administrator role" }
+        - insert:
+            schemaName: iamsso_policies
+            tableName: roles
+            columns:
+              - column: { name: id, valueComputed: "gen_random_uuid()" }
+              - column: { name: name, value: "moderator" }
+              - column: { name: description, value: "Moderator role" }
