@@ -29,7 +29,7 @@ data class AppProperties(
         val userCodeLength: Int = 8,
     )
     data class UserServiceProps(val baseUrl: String = "http://localhost:8081")
-    data class LoginPageProps(val url: String = "http://localhost:3000")
+    data class LoginPageProps(val url: String = "")
     data class AdminProps(val scope: String = "iam:admin")
     data class SsoSessionProps(val ttlSeconds: Long = 86400)
     data class AuthorizationRequestProps(val ttlSeconds: Long = 300)

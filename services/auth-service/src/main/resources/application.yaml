@@ -65,7 +65,7 @@ app:
   user-service:
     base-url: http://localhost:8081
   login-page:
-    url: http://localhost:3000
+    url: ""
   admin:
     scope: iam:admin
   sso-session:
