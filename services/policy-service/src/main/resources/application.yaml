@@ -6,8 +6,8 @@ spring:
     name: policy-service
   datasource:
     url: jdbc:postgresql://localhost:5432/iamsso_policies
-    username: postgres
-    password: postgres
+    username: app
+    password: app
   jpa:
     hibernate:
       ddl-auto: validate
@@ -17,7 +17,9 @@ spring:
         physical_naming_strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
     open-in-view: false
   liquibase:
+    enabled: true
     change-log: classpath:db/changelog/db.changelog-master.yaml
+    liquibase-schema: public
     default-schema: iamsso_policies
   kafka:
     bootstrap-servers: localhost:9092

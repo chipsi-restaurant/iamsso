@@ -42,9 +42,12 @@ data class CreatePolicyRequest(
     val action: String,
     val resourcePattern: String,
     val conditions: List<PolicyCondition>? = null,
-    val priority: Int = 0,
-    val enabled: Boolean = true,
-)
+    val priority: Int? = null,
+    val enabled: Boolean? = null,
+) {
+    fun resolvedPriority(): Int = priority ?: 0
+    fun resolvedEnabled(): Boolean = enabled ?: true
+}
 
 data class UpdatePolicyRequest(
     val name: String? = null,

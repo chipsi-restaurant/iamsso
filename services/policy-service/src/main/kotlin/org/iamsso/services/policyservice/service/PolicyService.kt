@@ -39,8 +39,8 @@ class PolicyService(
             action = request.action,
             resourcePattern = request.resourcePattern,
             conditions = request.conditions,
-            priority = request.priority,
-            enabled = request.enabled,
+            priority = request.resolvedPriority(),
+            enabled = request.resolvedEnabled(),
         )
         policyRepo.save(entity)
         events.policyCreated(entity.id, entity.name, entity.role, entity.action, entity.resourcePattern)

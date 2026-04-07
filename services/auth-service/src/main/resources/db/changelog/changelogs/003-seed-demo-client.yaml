@@ -16,7 +16,7 @@ databaseChangeLog:
                   value: Demo Application
               - column:
                   name: client_secret_hash
-                  value: "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy"
+                  value: "$2b$10$YfnzbNAErTNBtA4yWVekfurxUZnrtpL0fmI0.2XAQ9L4g1LJOJkau"
               - column:
                   name: grant_types
                   value: "authorization_code,refresh_token,client_credentials"
@@ -25,10 +25,10 @@ databaseChangeLog:
                   value: "http://localhost:3000/callback"
               - column:
                   name: scopes
-                  value: "openid profile email iam:admin"
+                  value: "openid,profile,email,iam:admin"
               - column:
                   name: token_endpoint_auth_method
-                  value: client_secret_post
+                  value: client_secret_basic
               - column:
                   name: access_token_ttl_seconds
                   valueNumeric: 3600
