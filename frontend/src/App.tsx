@@ -1,9 +1,40 @@
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { AuthProvider } from '@/lib/auth-context'
+import ProtectedRoute from '@/components/layout/protected-route'
+import SidebarLayout from '@/components/layout/sidebar'
+import LoginPage from '@/pages/login'
+import CallbackPage from '@/pages/callback'
+import DashboardPage from '@/pages/dashboard'
+import UsersPage from '@/pages/users'
+import UserDetailPage from '@/pages/user-detail'
+import PoliciesPage from '@/pages/policies'
+import ClientsPage from '@/pages/clients'
+import SessionsPage from '@/pages/sessions'
+
+const queryClient = new QueryClient({
+  defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
+})
+
 export default function App() {
   return (
-    <div className="flex items-center justify-center min-h-screen">
-      <h1 className="text-3xl font-light text-navy">
-        iam<span className="text-purple">sso</span>
-      </h1>
-    </div>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/callback" element={<CallbackPage />} />
+            <Route element={<ProtectedRoute><SidebarLayout /></ProtectedRoute>}>
+              <Route path="/" element={<DashboardPage />} />
+              <Route path="/users" element={<UsersPage />} />
+              <Route path="/users/:id" element={<UserDetailPage />} />
+              <Route path="/policies" element={<PoliciesPage />} />
+              <Route path="/clients" element={<ClientsPage />} />
+              <Route path="/sessions" element={<SessionsPage />} />
+            </Route>
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
+    </QueryClientProvider>
   )
 }
