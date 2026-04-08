@@ -4,40 +4,6 @@ server:
 spring:
   application:
     name: gateway-service
-  cloud:
-    gateway:
-      routes:
-        # Public — auth/OAuth endpoints
-        - id: auth-oauth
-          uri: http://localhost:8080
-          predicates:
-            - Path=/oauth2/**,/.well-known/**,/login,/userinfo
-
-        # Public — user registration (POST only)
-        - id: user-registration
-          uri: http://localhost:8081
-          predicates:
-            - Path=/api/v1/users
-            - Method=POST
-
-        # Protected — user service
-        - id: user-service
-          uri: http://localhost:8081
-          predicates:
-            - Path=/api/v1/users/**
-
-        # Protected — auth admin
-        - id: auth-admin
-          uri: http://localhost:8080
-          predicates:
-            - Path=/api/v1/clients/**,/api/v1/sessions/**
-
-        # Protected — policy service
-        - id: policy-service
-          uri: http://localhost:8082
-          predicates:
-            - Path=/api/v1/policies/**,/api/v1/roles/**,/api/v1/policy/**
-
   security:
     oauth2:
       resourceserver:
