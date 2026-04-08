@@ -29,6 +29,9 @@ dependencies {
     // Gateway
     implementation("org.springframework.cloud:spring-cloud-starter-gateway-server-webflux")
 
+    // Actuator
+    implementation("org.springframework.boot:spring-boot-starter-actuator")
+
     // Security — JWT validation
     implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
 

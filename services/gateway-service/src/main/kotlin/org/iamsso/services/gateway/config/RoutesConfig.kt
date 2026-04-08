@@ -24,5 +24,9 @@ class RoutesConfig {
         .route("policy-policies") { it.path("/api/v1/policies/**").uri("http://localhost:8082") }
         .route("policy-roles") { it.path("/api/v1/roles/**").uri("http://localhost:8082") }
         .route("policy-evaluate") { it.path("/api/v1/policy/**").uri("http://localhost:8082") }
+        // Health — proxied actuator endpoints
+        .route("health-auth") { it.path("/health/auth").filters { f -> f.rewritePath("/health/auth", "/actuator/health") }.uri("http://localhost:8080") }
+        .route("health-user") { it.path("/health/user").filters { f -> f.rewritePath("/health/user", "/actuator/health") }.uri("http://localhost:8081") }
+        .route("health-policy") { it.path("/health/policy").filters { f -> f.rewritePath("/health/policy", "/actuator/health") }.uri("http://localhost:8082") }
         .build()
 }
