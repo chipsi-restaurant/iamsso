@@ -30,6 +30,7 @@ object UserMapper {
         emailVerified = e.emailVerified,
         mfaEnabled = e.mfaEnabled,
         locale = e.locale,
+        role = e.role,
         createdAt = e.createdAt,
         updatedAt = e.updatedAt,
     )
