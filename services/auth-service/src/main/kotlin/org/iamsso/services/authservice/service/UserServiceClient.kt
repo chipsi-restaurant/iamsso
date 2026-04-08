@@ -98,7 +98,7 @@ class UserServiceClient(
             status = status!!.toString(),
             mfaRequired = mfaRequired!!,
             failedAttempts = failedAttempts!!,
-            lockedUntil = lockedUntil!!.toString()
+            lockedUntil = lockedUntil?.toString()
         )
 
     private fun org.iamsso.contracts.user.model.UserProfileResponse.toUserProfile(): UserProfile =
