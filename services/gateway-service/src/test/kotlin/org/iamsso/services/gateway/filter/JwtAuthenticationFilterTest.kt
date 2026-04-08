@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
@@ -104,7 +105,12 @@ class JwtAuthenticationFilterTest {
         assertEquals("admin", exchange.attributes["jwt.role"])
         assertEquals("openid profile", exchange.attributes["jwt.scope"])
         assertEquals("session-456", exchange.attributes["jwt.sid"])
-        verify(chain).filter(exchange)
+
+        val captor = argumentCaptor<ServerWebExchange>()
+        verify(chain).filter(captor.capture())
+        val forwarded = captor.firstValue
+        assertEquals("user-123", forwarded.request.headers.getFirst("X-User-Id"))
+        assertEquals("admin", forwarded.request.headers.getFirst("X-User-Role"))
     }
 
     @Test

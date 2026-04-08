@@ -36,12 +36,19 @@ class JwtAuthenticationFilter(
         val token = authHeader.substring(7)
         return jwtDecoder.decode(token)
             .flatMap { jwt ->
+                val userId = jwt.subject ?: ""
+                val role = jwt.getClaimAsString("role") ?: "user"
                 val attributes = exchange.attributes
-                attributes["jwt.sub"] = jwt.subject ?: ""
-                attributes["jwt.role"] = jwt.getClaimAsString("role") ?: "user"
+                attributes["jwt.sub"] = userId
+                attributes["jwt.role"] = role
                 attributes["jwt.scope"] = jwt.getClaimAsString("scope") ?: ""
                 attributes["jwt.sid"] = jwt.getClaimAsString("sid") ?: ""
-                chain.filter(exchange)
+                val mutatedRequest = exchange.request.mutate()
+                    .header("X-User-Id", userId)
+                    .header("X-User-Role", role)
+                    .build()
+                val mutatedExchange = exchange.mutate().request(mutatedRequest).build()
+                chain.filter(mutatedExchange)
             }
             .onErrorResume(JwtException::class.java) { e ->
                 unauthorized(exchange, e.message ?: "Invalid token")
