@@ -2,8 +2,8 @@ const GATEWAY_URL = 'http://localhost:8090'
 const CLIENT_ID = 'demo-app'
 const REDIRECT_URI = 'http://localhost:3000/callback'
 
-function base64UrlEncode(buffer: ArrayBuffer): string {
-  const bytes = new Uint8Array(buffer)
+function base64UrlEncode(buffer: ArrayBuffer | Uint8Array): string {
+  const bytes = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer)
   let binary = ''
   bytes.forEach(b => binary += String.fromCharCode(b))
   return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
