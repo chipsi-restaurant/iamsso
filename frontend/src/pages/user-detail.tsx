@@ -28,11 +28,11 @@ export default function UserDetailPage() {
   }
 
   if (userLoading || profileLoading) {
-    return <p className="text-body text-sm">Loading...</p>
+    return <p className="text-body text-sm">Загрузка...</p>
   }
 
   if (!user) {
-    return <p className="text-body text-sm">User not found.</p>
+    return <p className="text-body text-sm">Пользователь не найден.</p>
   }
 
   return (
@@ -42,7 +42,7 @@ export default function UserDetailPage() {
         className="inline-flex items-center gap-1.5 text-sm text-body hover:text-navy transition-colors mb-6"
       >
         <ArrowLeft size={16} />
-        Back to users
+        Назад к пользователям
       </button>
 
       <div className="flex items-center justify-between mb-6">
@@ -55,7 +55,7 @@ export default function UserDetailPage() {
           className="inline-flex items-center gap-2 px-4 py-2 text-sm text-ruby border border-red-200 rounded-md hover:bg-red-50 transition-colors"
         >
           <Trash2 size={16} />
-          Delete
+          Удалить
         </button>
       </div>
 
@@ -63,14 +63,14 @@ export default function UserDetailPage() {
         {/* Account info card */}
         <div className="bg-white border border-border rounded-lg">
           <div className="px-6 py-4 border-b border-border">
-            <h2 className="text-sm font-semibold text-navy">Account</h2>
+            <h2 className="text-sm font-semibold text-navy">Аккаунт</h2>
           </div>
           <div className="px-6 py-4 space-y-3">
             <InfoRow label="Email" value={user.email ?? '—'} />
-            <InfoRow label="Username" value={user.username ?? '—'} />
-            <InfoRow label="Role" value={user.role} />
+            <InfoRow label="Имя пользователя" value={user.username ?? '—'} />
+            <InfoRow label="Роль" value={user.role} />
             <div className="flex justify-between items-center">
-              <span className="text-sm text-body">Status</span>
+              <span className="text-sm text-body">Статус</span>
               <div className="flex items-center gap-2">
                 <StatusBadge status={user.status} />
                 <select
@@ -85,24 +85,24 @@ export default function UserDetailPage() {
                 </select>
               </div>
             </div>
-            <InfoRow label="Email verified" value={user.emailVerified ? 'Yes' : 'No'} />
-            <InfoRow label="MFA enabled" value={user.mfaEnabled ? 'Yes' : 'No'} />
-            <InfoRow label="Locale" value={user.locale} />
-            <InfoRow label="Created" value={new Date(user.createdAt).toLocaleString()} />
+            <InfoRow label="Email подтверждён" value={user.emailVerified ? 'Да' : 'Нет'} />
+            <InfoRow label="MFA включён" value={user.mfaEnabled ? 'Да' : 'Нет'} />
+            <InfoRow label="Язык" value={user.locale} />
+            <InfoRow label="Создан" value={new Date(user.createdAt).toLocaleString()} />
           </div>
         </div>
 
         {/* Profile card */}
         <div className="bg-white border border-border rounded-lg">
           <div className="px-6 py-4 border-b border-border">
-            <h2 className="text-sm font-semibold text-navy">Profile</h2>
+            <h2 className="text-sm font-semibold text-navy">Профиль</h2>
           </div>
           <div className="px-6 py-4 space-y-3">
-            <InfoRow label="Display name" value={profile?.displayName ?? '—'} />
-            <InfoRow label="First name" value={profile?.firstName ?? '—'} />
-            <InfoRow label="Last name" value={profile?.lastName ?? '—'} />
-            <InfoRow label="Timezone" value={profile?.timezone ?? '—'} />
-            <InfoRow label="Avatar URL" value={profile?.avatarUrl ?? '—'} />
+            <InfoRow label="Отображаемое имя" value={profile?.displayName ?? '—'} />
+            <InfoRow label="Имя" value={profile?.firstName ?? '—'} />
+            <InfoRow label="Фамилия" value={profile?.lastName ?? '—'} />
+            <InfoRow label="Часовой пояс" value={profile?.timezone ?? '—'} />
+            <InfoRow label="URL аватара" value={profile?.avatarUrl ?? '—'} />
           </div>
         </div>
       </div>
@@ -111,14 +111,14 @@ export default function UserDetailPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="bg-white rounded-lg shadow-lg w-full max-w-sm mx-4">
             <div className="px-6 py-4 border-b border-border">
-              <h2 className="text-lg font-semibold text-navy">Delete user</h2>
+              <h2 className="text-lg font-semibold text-navy">Удалить пользователя</h2>
             </div>
             <div className="px-6 py-4">
               <p className="text-sm text-body">
-                Are you sure you want to delete <strong className="text-navy">{user.email ?? user.username}</strong>? This action cannot be undone.
+                Вы уверены, что хотите удалить <strong className="text-navy">{user.email ?? user.username}</strong>? Это действие нельзя отменить.
               </p>
               {deleteUser.isError && (
-                <p className="text-sm text-ruby mt-2">Failed to delete user. Please try again.</p>
+                <p className="text-sm text-ruby mt-2">Не удалось удалить пользователя. Попробуйте ещё раз.</p>
               )}
             </div>
             <div className="px-6 py-4 border-t border-border flex justify-end gap-3">
@@ -127,14 +127,14 @@ export default function UserDetailPage() {
                 onClick={() => setShowDeleteConfirm(false)}
                 className="px-4 py-2 text-sm border border-border rounded-md text-navy hover:bg-surface transition-colors"
               >
-                Cancel
+                Отмена
               </button>
               <button
                 onClick={handleDelete}
                 disabled={deleteUser.isPending}
                 className="px-4 py-2 text-sm bg-ruby text-white rounded-md font-medium hover:bg-ruby/90 disabled:opacity-60 transition-colors"
               >
-                {deleteUser.isPending ? 'Deleting...' : 'Delete'}
+                {deleteUser.isPending ? 'Удаление...' : 'Удалить'}
               </button>
             </div>
           </div>

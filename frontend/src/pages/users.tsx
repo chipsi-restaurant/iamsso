@@ -20,15 +20,15 @@ export default function UsersPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-semibold text-navy">Users</h1>
-          <p className="text-sm text-body mt-1">{total} user{total !== 1 ? 's' : ''} total</p>
+          <h1 className="text-2xl font-semibold text-navy">Пользователи</h1>
+          <p className="text-sm text-body mt-1">{total} всего</p>
         </div>
         <button
           onClick={() => setShowCreate(true)}
           className="inline-flex items-center gap-2 px-4 py-2 bg-purple text-white text-sm font-medium rounded-md hover:bg-purple/90 transition-colors"
         >
           <Plus size={16} />
-          Create user
+          Создать пользователя
         </button>
       </div>
 
@@ -37,21 +37,21 @@ export default function UsersPage() {
           <thead>
             <tr className="border-b border-border bg-surface">
               <th className="text-left px-4 py-3 font-medium text-navy">Email</th>
-              <th className="text-left px-4 py-3 font-medium text-navy">Username</th>
-              <th className="text-left px-4 py-3 font-medium text-navy">Role</th>
-              <th className="text-left px-4 py-3 font-medium text-navy">Status</th>
-              <th className="text-left px-4 py-3 font-medium text-navy">Created</th>
+              <th className="text-left px-4 py-3 font-medium text-navy">Имя пользователя</th>
+              <th className="text-left px-4 py-3 font-medium text-navy">Роль</th>
+              <th className="text-left px-4 py-3 font-medium text-navy">Статус</th>
+              <th className="text-left px-4 py-3 font-medium text-navy">Создан</th>
               <th className="w-8" />
             </tr>
           </thead>
           <tbody>
             {isLoading ? (
               <tr>
-                <td colSpan={6} className="px-4 py-12 text-center text-body">Loading...</td>
+                <td colSpan={6} className="px-4 py-12 text-center text-body">Загрузка...</td>
               </tr>
             ) : users.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-12 text-center text-body">No users found</td>
+                <td colSpan={6} className="px-4 py-12 text-center text-body">Пользователи не найдены</td>
               </tr>
             ) : (
               users.map((user) => (
@@ -76,7 +76,7 @@ export default function UsersPage() {
       {totalPages > 1 && (
         <div className="flex items-center justify-between mt-4">
           <p className="text-sm text-body">
-            Page {page + 1} of {totalPages}
+            Страница {page + 1} из {totalPages}
           </p>
           <div className="flex gap-2">
             <button
@@ -84,14 +84,14 @@ export default function UsersPage() {
               disabled={page === 0}
               className="px-3 py-1.5 text-sm border border-border rounded-md text-navy hover:bg-surface disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
-              Previous
+              Назад
             </button>
             <button
               onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
               disabled={page >= totalPages - 1}
               className="px-3 py-1.5 text-sm border border-border rounded-md text-navy hover:bg-surface disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
-              Next
+              Далее
             </button>
           </div>
         </div>
@@ -123,7 +123,7 @@ function CreateUserModal({ onClose }: { onClose: () => void }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div className="bg-white rounded-lg shadow-lg w-full max-w-md mx-4">
         <div className="px-6 py-4 border-b border-border">
-          <h2 className="text-lg font-semibold text-navy">Create user</h2>
+          <h2 className="text-lg font-semibold text-navy">Создать пользователя</h2>
         </div>
         <form onSubmit={handleSubmit}>
           <div className="px-6 py-4 space-y-4">
@@ -136,7 +136,7 @@ function CreateUserModal({ onClose }: { onClose: () => void }) {
                 className="w-full px-3 py-2 border border-border rounded-md text-sm text-navy focus:outline-none focus:ring-2 focus:ring-purple/30 focus:border-purple"
               />
             </Field>
-            <Field label="Password" required>
+            <Field label="Пароль" required>
               <input
                 type="password"
                 required
@@ -145,7 +145,7 @@ function CreateUserModal({ onClose }: { onClose: () => void }) {
                 className="w-full px-3 py-2 border border-border rounded-md text-sm text-navy focus:outline-none focus:ring-2 focus:ring-purple/30 focus:border-purple"
               />
             </Field>
-            <Field label="Username">
+            <Field label="Имя пользователя">
               <input
                 type="text"
                 value={form.username}
@@ -153,7 +153,7 @@ function CreateUserModal({ onClose }: { onClose: () => void }) {
                 className="w-full px-3 py-2 border border-border rounded-md text-sm text-navy focus:outline-none focus:ring-2 focus:ring-purple/30 focus:border-purple"
               />
             </Field>
-            <Field label="Display name">
+            <Field label="Отображаемое имя">
               <input
                 type="text"
                 value={form.displayName}
@@ -162,7 +162,7 @@ function CreateUserModal({ onClose }: { onClose: () => void }) {
               />
             </Field>
             {createUser.isError && (
-              <p className="text-sm text-ruby">Failed to create user. Please try again.</p>
+              <p className="text-sm text-ruby">Не удалось создать пользователя. Попробуйте ещё раз.</p>
             )}
           </div>
           <div className="px-6 py-4 border-t border-border flex justify-end gap-3">
@@ -171,14 +171,14 @@ function CreateUserModal({ onClose }: { onClose: () => void }) {
               onClick={onClose}
               className="px-4 py-2 text-sm border border-border rounded-md text-navy hover:bg-surface transition-colors"
             >
-              Cancel
+              Отмена
             </button>
             <button
               type="submit"
               disabled={createUser.isPending}
               className="px-4 py-2 text-sm bg-purple text-white rounded-md font-medium hover:bg-purple/90 disabled:opacity-60 transition-colors"
             >
-              {createUser.isPending ? 'Creating...' : 'Create'}
+              {createUser.isPending ? 'Создание...' : 'Создать'}
             </button>
           </div>
         </form>

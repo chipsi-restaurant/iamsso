@@ -35,18 +35,18 @@ export default function DashboardPage() {
   const health = useServiceHealth()
 
   const stats: StatCardProps[] = [
-    { label: 'Users', value: users.data?.totalElements, icon: <Users size={20} />, loading: users.isLoading },
-    { label: 'Roles', value: roles.data?.length, icon: <Shield size={20} />, loading: roles.isLoading },
-    { label: 'Policies', value: policies.data?.totalElements, icon: <FileCheck size={20} />, loading: policies.isLoading },
-    { label: 'OAuth Clients', value: clients.data?.length, icon: <Key size={20} />, loading: clients.isLoading },
+    { label: 'Пользователи', value: users.data?.totalElements, icon: <Users size={20} />, loading: users.isLoading },
+    { label: 'Роли', value: roles.data?.length, icon: <Shield size={20} />, loading: roles.isLoading },
+    { label: 'Политики', value: policies.data?.totalElements, icon: <FileCheck size={20} />, loading: policies.isLoading },
+    { label: 'OAuth-клиенты', value: clients.data?.length, icon: <Key size={20} />, loading: clients.isLoading },
   ]
 
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-semibold text-navy">Dashboard</h1>
+        <h1 className="text-2xl font-semibold text-navy">Панель управления</h1>
         <p className="text-body mt-1">
-          Welcome back, {user?.email ?? user?.sub ?? 'Admin'}
+          С возвращением, {user?.email ?? user?.sub ?? 'Admin'}
         </p>
       </div>
 
@@ -57,21 +57,21 @@ export default function DashboardPage() {
       </div>
 
       <div>
-        <h2 className="text-lg font-semibold text-navy mb-3">Service Health</h2>
+        <h2 className="text-lg font-semibold text-navy mb-3">Состояние сервисов</h2>
         <div className="bg-white border border-border rounded-md overflow-hidden">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-surface">
-                <th className="text-left px-4 py-2.5 font-medium text-body">Service</th>
-                <th className="text-left px-4 py-2.5 font-medium text-body">Port</th>
-                <th className="text-left px-4 py-2.5 font-medium text-body">Status</th>
+                <th className="text-left px-4 py-2.5 font-medium text-body">Сервис</th>
+                <th className="text-left px-4 py-2.5 font-medium text-body">Порт</th>
+                <th className="text-left px-4 py-2.5 font-medium text-body">Статус</th>
               </tr>
             </thead>
             <tbody>
               {health.isLoading ? (
                 <tr>
                   <td colSpan={3} className="px-4 py-4 text-center text-body">
-                    Checking services...
+                    Проверка сервисов...
                   </td>
                 </tr>
               ) : (
@@ -87,7 +87,7 @@ export default function DashboardPage() {
                           }`}
                         />
                         <span className={svc.status === 'up' ? 'text-green-text' : 'text-body'}>
-                          {svc.status === 'up' ? 'Healthy' : 'Unreachable'}
+                          {svc.status === 'up' ? 'Работает' : 'Недоступен'}
                         </span>
                       </span>
                     </td>
