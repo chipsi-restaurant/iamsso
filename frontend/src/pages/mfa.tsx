@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { QRCodeSVG } from 'qrcode.react'
 import { ShieldCheck, Plus, Trash2, CheckCircle, XCircle } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import StatusBadge from '@/components/status-badge'
@@ -161,10 +162,22 @@ export default function MfaPage() {
             )}
             {enrollment.provisioningUri && (
               <div>
-                <p className="text-sm text-body mb-1">URI для приложения:</p>
-                <code className="block rounded-md bg-white border border-border px-3 py-2 text-xs font-mono text-navy break-all select-all">
-                  {enrollment.provisioningUri}
-                </code>
+                <p className="text-sm text-body mb-2">Отсканируйте QR-код приложением-аутентификатором:</p>
+                <div className="inline-block rounded-lg border border-border bg-white p-4">
+                  <QRCodeSVG
+                    value={enrollment.provisioningUri}
+                    size={200}
+                    level="M"
+                    bgColor="#ffffff"
+                    fgColor="#061b31"
+                  />
+                </div>
+                <details className="mt-2">
+                  <summary className="text-xs text-body cursor-pointer hover:text-navy">Показать URI</summary>
+                  <code className="block mt-1 rounded-md bg-white border border-border px-3 py-2 text-xs font-mono text-navy break-all select-all">
+                    {enrollment.provisioningUri}
+                  </code>
+                </details>
               </div>
             )}
             <p className="text-xs text-body">
