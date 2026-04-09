@@ -43,9 +43,11 @@ class JwtAuthenticationFilter(
                 attributes["jwt.role"] = role
                 attributes["jwt.scope"] = jwt.getClaimAsString("scope") ?: ""
                 attributes["jwt.sid"] = jwt.getClaimAsString("sid") ?: ""
+                val email = jwt.getClaimAsString("email") ?: ""
                 val mutatedRequest = exchange.request.mutate()
                     .header("X-User-Id", userId)
                     .header("X-User-Role", role)
+                    .header("X-User-Email", email)
                     .build()
                 val mutatedExchange = exchange.mutate().request(mutatedRequest).build()
                 chain.filter(mutatedExchange)
