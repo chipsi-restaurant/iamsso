@@ -7,6 +7,9 @@ import org.iamsso.services.authservice.repository.OAuthClientRepository
 import org.iamsso.services.authservice.service.AuthEventPublisher
 import org.iamsso.services.authservice.service.AuthRequest
 import org.iamsso.services.authservice.service.AuthRequestService
+import org.iamsso.services.authservice.service.MfaChallenge
+import org.iamsso.services.authservice.service.MfaChallengeService
+import org.iamsso.services.authservice.service.MfaServiceClient
 import org.iamsso.services.authservice.service.SsoSessionService
 import org.iamsso.services.authservice.service.UserServiceClient
 import org.springframework.http.HttpStatus
@@ -29,6 +32,8 @@ class AuthorizationController(
     private val authCodeStore: AuthorizationCodeStore,
     private val userServiceClient: UserServiceClient,
     private val authEventPublisher: AuthEventPublisher,
+    private val mfaChallengeService: MfaChallengeService,
+    private val mfaServiceClient: MfaServiceClient,
     private val props: AppProperties,
 ) {
 
@@ -133,6 +138,18 @@ class AuthorizationController(
             val reason = if (creds?.lockedUntil != null) "account_locked" else "invalid_credentials"
             authEventPublisher.publishLoginFailed(username, authRequest.clientId, reason)
             return RedirectView("/login?auth_request_id=$newId&error=$reason")
+        }
+
+        // Check if MFA is required
+        val mfaStatus = mfaServiceClient.getStatus(user.id)
+        if (mfaStatus != null && mfaStatus.mfaEnabled) {
+            val challenge = MfaChallenge(
+                userId = user.id,
+                authRequest = authRequest,
+                factorTypes = mfaStatus.activeFactors,
+            )
+            mfaChallengeService.save(challenge, props.mfaChallenge.ttlSeconds)
+            return RedirectView("/mfa-challenge?challenge_id=${challenge.challengeId}")
         }
 
         val session = ssoSessionService.create(user.id, authRequest.clientId)
