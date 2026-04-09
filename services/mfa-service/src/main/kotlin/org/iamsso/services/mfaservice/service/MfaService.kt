@@ -1,0 +1,159 @@
+package org.iamsso.services.mfaservice.service
+
+import dev.samstevens.totp.code.DefaultCodeGenerator
+import dev.samstevens.totp.code.DefaultCodeVerifier
+import dev.samstevens.totp.secret.DefaultSecretGenerator
+import dev.samstevens.totp.time.SystemTimeProvider
+import org.iamsso.contracts.mfa.model.EnrollMfaFactorRequest
+import org.iamsso.contracts.mfa.model.MfaEnrollmentResponse
+import org.iamsso.contracts.mfa.model.MfaFactorResponse
+import org.iamsso.contracts.mfa.model.MfaStatusResponse
+import org.iamsso.contracts.mfa.model.VerifyMfaRequest
+import org.iamsso.contracts.mfa.model.VerifyMfaResponse
+import org.iamsso.services.mfaservice.config.AppProperties
+import org.iamsso.services.mfaservice.entity.MfaFactorEntity
+import org.iamsso.services.mfaservice.entity.MfaFactorStatus
+import org.iamsso.services.mfaservice.entity.MfaFactorType
+import org.iamsso.services.mfaservice.exception.InvalidMfaCodeException
+import org.iamsso.services.mfaservice.exception.MfaFactorAlreadyExistsException
+import org.iamsso.services.mfaservice.exception.MfaFactorNotFoundException
+import org.iamsso.services.mfaservice.exception.NoActiveFactorException
+import org.iamsso.services.mfaservice.repository.MfaFactorRepository
+import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
+import java.time.Instant
+import java.util.UUID
+
+@Service
+class MfaService(
+    private val factorRepo: MfaFactorRepository,
+    private val events: EventPublisher,
+    private val props: AppProperties,
+) {
+    private val secretGen = DefaultSecretGenerator()
+    private val codeVerifier = DefaultCodeVerifier(DefaultCodeGenerator(), SystemTimeProvider())
+
+    @Transactional(readOnly = true)
+    fun listFactors(userId: UUID): List<MfaFactorResponse> =
+        factorRepo.findAllByUserId(userId).map { it.toResponse() }
+
+    @Transactional
+    fun enroll(userId: UUID, request: EnrollMfaFactorRequest, email: String?): MfaEnrollmentResponse {
+        val type = MfaFactorType.valueOf(request.factorType.name)
+
+        factorRepo.findByUserIdAndFactorType(userId, type)?.let {
+            throw MfaFactorAlreadyExistsException(type.name)
+        }
+
+        val secret = if (type == MfaFactorType.TOTP) secretGen.generate() else null
+        val factor = MfaFactorEntity(
+            userId = userId,
+            factorType = type,
+            displayName = request.displayName,
+            secret = secret,
+        )
+        factorRepo.save(factor)
+
+        if (type == MfaFactorType.EMAIL_OTP && email != null) {
+            val code = (100_000..999_999).random().toString()
+            factor.secret = code
+            events.sendEmailOtp(userId, email, code, Instant.now().plusSeconds(props.emailOtp.ttlSeconds))
+        }
+
+        val uri = if (type == MfaFactorType.TOTP && secret != null) {
+            val account = email ?: userId.toString()
+            "otpauth://totp/${props.totp.issuer}:$account?secret=$secret&issuer=${props.totp.issuer}"
+        } else null
+
+        return MfaEnrollmentResponse(
+            factorId = factor.id,
+            factorType = factor.factorType.toContract(),
+            status = factor.status.toContract(),
+            secret = secret,
+            provisioningUri = uri,
+        )
+    }
+
+    @Transactional
+    fun confirm(userId: UUID, factorId: UUID, code: String): MfaFactorResponse {
+        val factor = findFactor(userId, factorId)
+        val valid = when (factor.factorType) {
+            MfaFactorType.TOTP -> codeVerifier.isValidCode(factor.secret, code)
+            MfaFactorType.EMAIL_OTP -> factor.secret == code
+        }
+        if (!valid) throw InvalidMfaCodeException()
+
+        factor.status = MfaFactorStatus.ACTIVE
+        if (factor.factorType == MfaFactorType.EMAIL_OTP) factor.secret = null
+        events.mfaFactorEnrolled(userId, factorId, factor.factorType.name)
+        return factor.toResponse()
+    }
+
+    @Transactional
+    fun remove(userId: UUID, factorId: UUID) {
+        val factor = findFactor(userId, factorId)
+        factorRepo.delete(factor)
+        events.mfaFactorRemoved(userId, factorId, factor.factorType.name)
+    }
+
+    @Transactional
+    fun verify(userId: UUID, request: VerifyMfaRequest): VerifyMfaResponse {
+        val requestedType = request.factorType?.let { MfaFactorType.valueOf(it.name) }
+
+        val factor = if (requestedType != null) {
+            factorRepo.findByUserIdAndFactorTypeAndStatus(userId, requestedType, MfaFactorStatus.ACTIVE)
+                ?: throw NoActiveFactorException()
+        } else {
+            factorRepo.findAllByUserId(userId)
+                .firstOrNull { it.status == MfaFactorStatus.ACTIVE }
+                ?: throw NoActiveFactorException()
+        }
+
+        val valid = when (factor.factorType) {
+            MfaFactorType.TOTP -> codeVerifier.isValidCode(factor.secret, request.code)
+            MfaFactorType.EMAIL_OTP -> factor.secret == request.code
+        }
+
+        return VerifyMfaResponse(valid = valid)
+    }
+
+    @Transactional(readOnly = true)
+    fun getStatus(userId: UUID): MfaStatusResponse {
+        val factors = factorRepo.findAllByUserId(userId)
+        val active = factors.filter { it.status == MfaFactorStatus.ACTIVE }
+        return MfaStatusResponse(
+            userId = userId,
+            mfaEnabled = active.isNotEmpty(),
+            activeFactors = active.map { it.factorType.toContract() },
+        )
+    }
+
+    @Transactional
+    fun sendOtp(userId: UUID, email: String) {
+        val factor = factorRepo.findByUserIdAndFactorTypeAndStatus(userId, MfaFactorType.EMAIL_OTP, MfaFactorStatus.ACTIVE)
+            ?: throw NoActiveFactorException()
+        val code = (100_000..999_999).random().toString()
+        factor.secret = code
+        events.sendEmailOtp(userId, email, code, Instant.now().plusSeconds(props.emailOtp.ttlSeconds))
+    }
+
+    private fun findFactor(userId: UUID, factorId: UUID): MfaFactorEntity {
+        val factor = factorRepo.findById(factorId).orElseThrow { MfaFactorNotFoundException(factorId) }
+        if (factor.userId != userId) throw MfaFactorNotFoundException(factorId)
+        return factor
+    }
+
+    private fun MfaFactorEntity.toResponse() = MfaFactorResponse(
+        id = id,
+        factorType = factorType.toContract(),
+        status = status.toContract(),
+        displayName = displayName,
+        createdAt = createdAt,
+    )
+
+    private fun MfaFactorType.toContract() =
+        org.iamsso.contracts.mfa.model.MfaFactorType.valueOf(name)
+
+    private fun MfaFactorStatus.toContract() =
+        org.iamsso.contracts.mfa.model.MfaFactorStatus.valueOf(name)
+}
