@@ -3,11 +3,11 @@ import { useAuth } from '@/lib/auth-context'
 import { LayoutDashboard, Users, Shield, Key, Monitor, LogOut } from 'lucide-react'
 
 const navItems = [
-  { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/users', icon: Users, label: 'Users' },
-  { to: '/policies', icon: Shield, label: 'Policies' },
-  { to: '/clients', icon: Key, label: 'Clients' },
-  { to: '/sessions', icon: Monitor, label: 'Sessions' },
+  { to: '/', icon: LayoutDashboard, label: 'Панель' },
+  { to: '/users', icon: Users, label: 'Пользователи' },
+  { to: '/policies', icon: Shield, label: 'Политики' },
+  { to: '/clients', icon: Key, label: 'Клиенты' },
+  { to: '/sessions', icon: Monitor, label: 'Сессии' },
 ]
 
 export default function SidebarLayout() {
@@ -32,7 +32,7 @@ export default function SidebarLayout() {
               <p className="text-sm font-medium text-navy truncate">{user?.email || user?.sub || 'User'}</p>
               <p className="text-xs text-body">{user?.role || 'user'}</p>
             </div>
-            <button onClick={logout} className="p-2 rounded-md text-body hover:text-ruby hover:bg-red-50 transition-colors" title="Logout">
+            <button onClick={logout} className="p-2 rounded-md text-body hover:text-ruby hover:bg-red-50 transition-colors" title="Выйти">
               <LogOut size={16} />
             </button>
           </div>

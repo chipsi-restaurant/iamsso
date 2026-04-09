@@ -16,11 +16,11 @@ export default function CallbackPage() {
     const codeVerifier = sessionStorage.getItem('pkce_verifier')
 
     if (!code || !codeVerifier) {
-      setError('Missing authorization code or PKCE verifier')
+      setError('Отсутствует код авторизации или PKCE verifier')
       return
     }
     if (state !== storedState) {
-      setError('State mismatch — possible CSRF attack')
+      setError('Несоответствие state — возможная CSRF-атака')
       return
     }
 
@@ -33,7 +33,7 @@ export default function CallbackPage() {
         navigate('/', { replace: true })
       })
       .catch((err) => {
-        setError(`Token exchange failed: ${err.message}`)
+        setError(`Ошибка обмена токена: ${err.message}`)
       })
   }, [])
 
@@ -42,7 +42,7 @@ export default function CallbackPage() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <p className="text-ruby text-sm mb-4">{error}</p>
-          <a href="/login" className="text-purple text-sm hover:underline">Back to login</a>
+          <a href="/login" className="text-purple text-sm hover:underline">Вернуться к входу</a>
         </div>
       </div>
     )
@@ -50,7 +50,7 @@ export default function CallbackPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center">
-      <p className="text-body text-sm">Authenticating...</p>
+      <p className="text-body text-sm">Авторизация...</p>
     </div>
   )
 }
