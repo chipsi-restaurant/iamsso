@@ -21,7 +21,7 @@ export function getLoginUrl(codeChallenge: string, state: string): string {
     response_type: 'code',
     client_id: CLIENT_ID,
     redirect_uri: REDIRECT_URI,
-    scope: 'openid profile email',
+    scope: 'openid profile email iam:admin',
     code_challenge: codeChallenge,
     code_challenge_method: 'S256',
     state,
