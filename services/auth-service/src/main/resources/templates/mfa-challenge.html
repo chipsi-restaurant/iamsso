@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Двухфакторная аутентификация — iamsso</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&display=swap" rel="stylesheet"/>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #ffffff;
+            color: #061b31;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 380px;
+            text-align: center;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 500;
+            letter-spacing: -0.4px;
+            color: #061b31;
+            margin-bottom: 6px;
+        }
+        .logo span { color: #533afd; }
+
+        .subtitle {
+            font-size: 14px;
+            font-weight: 300;
+            color: #64748d;
+            margin-bottom: 32px;
+        }
+
+        .card {
+            background: #ffffff;
+            border: 1px solid #e5edf5;
+            border-radius: 6px;
+            padding: 32px;
+            box-shadow: rgba(50,50,93,0.25) 0px 30px 45px -30px, rgba(0,0,0,0.1) 0px 18px 36px -18px;
+        }
+
+        .card h2 {
+            font-size: 18px;
+            font-weight: 300;
+            color: #061b31;
+            margin-bottom: 24px;
+            letter-spacing: -0.18px;
+        }
+
+        .error {
+            background: rgba(234,34,97,0.06);
+            border: 1px solid rgba(234,34,97,0.2);
+            color: #ea2261;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 400;
+            margin-bottom: 16px;
+            text-align: left;
+        }
+
+        .field { margin-bottom: 16px; text-align: left; }
+
+        label {
+            display: block;
+            font-size: 13px;
+            font-weight: 400;
+            color: #273951;
+            margin-bottom: 6px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #e5edf5;
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 300;
+            color: #061b31;
+            background: #ffffff;
+            transition: border-color 0.15s;
+        }
+        input::placeholder { color: #64748d; }
+        input:focus {
+            outline: none;
+            border-color: #533afd;
+            box-shadow: 0 0 0 2px rgba(83,58,253,0.08);
+        }
+
+        button {
+            width: 100%;
+            padding: 10px 16px;
+            background: #533afd;
+            color: #ffffff;
+            border: none;
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 400;
+            cursor: pointer;
+            transition: background 0.15s;
+            margin-top: 8px;
+        }
+        button:hover { background: #4434d4; }
+        button:active { background: #2e2b8c; }
+
+        .footer {
+            margin-top: 24px;
+            font-size: 12px;
+            font-weight: 300;
+            color: #64748d;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="logo">iam<span>sso</span></div>
+    <p class="subtitle">Подтвердите вход</p>
+
+    <div class="card">
+        <h2>Двухфакторная аутентификация</h2>
+
+        <div class="error" th:if="${error == 'invalid_code'}">Неверный код.</div>
+        <div class="error" th:if="${error == 'mfa_expired'}">Сессия MFA истекла.</div>
+
+        <form method="post" th:action="@{/mfa-challenge}">
+            <input type="hidden" name="challenge_id" th:value="${challengeId}"/>
+
+            <div class="field">
+                <label for="mfa_code">Код подтверждения</label>
+                <input id="mfa_code" type="text" name="mfa_code" inputmode="numeric" pattern="\d{6}" maxlength="6" autofocus required placeholder="000000"/>
+            </div>
+
+            <button type="submit">Подтвердить</button>
+        </form>
+    </div>
+
+    <p class="footer">Введите код из приложения-аутентификатора</p>
+</div>
+</body>
+</html>

@@ -21,7 +21,7 @@ class SecurityConfig(private val jwtKeyProvider: JwtKeyProvider) {
     @Order(1)
     fun oauthFilterChain(http: HttpSecurity): SecurityFilterChain =
         http
-            .securityMatcher("/oauth2/**", "/.well-known/**", "/userinfo", "/actuator/**", "/login", "/api/v1/sessions/logout")
+            .securityMatcher("/oauth2/**", "/.well-known/**", "/userinfo", "/actuator/**", "/login", "/mfa-challenge", "/api/v1/sessions/logout")
             .csrf { it.disable() }
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             .authorizeHttpRequests { it.anyRequest().permitAll() }
