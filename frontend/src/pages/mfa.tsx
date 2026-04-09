@@ -128,22 +128,30 @@ export default function MfaPage() {
           <h2 className="text-lg font-semibold text-navy">Подключить фактор</h2>
         </div>
         <div className="flex flex-wrap gap-3">
-          <button
-            onClick={() => handleEnroll('TOTP')}
-            disabled={enroll.isPending}
-            className="inline-flex items-center gap-2 rounded-md bg-purple px-4 py-2 text-sm font-medium text-white hover:bg-purple-hover transition-colors disabled:opacity-50"
-          >
-            <Plus size={16} />
-            {enroll.isPending ? 'Подключение...' : 'Подключить TOTP'}
-          </button>
-          <button
-            onClick={() => handleEnroll('EMAIL_OTP')}
-            disabled={enroll.isPending}
-            className="inline-flex items-center gap-2 rounded-md border border-border bg-white px-4 py-2 text-sm font-medium text-navy hover:bg-surface transition-colors disabled:opacity-50"
-          >
-            <Plus size={16} />
-            {enroll.isPending ? 'Подключение...' : 'Подключить Email OTP'}
-          </button>
+          {(() => {
+            const hasTOTP = factors?.some(f => f.factorType === 'TOTP')
+            const hasEmailOTP = factors?.some(f => f.factorType === 'EMAIL_OTP')
+            return (
+              <>
+                <button
+                  onClick={() => handleEnroll('TOTP')}
+                  disabled={enroll.isPending || hasTOTP}
+                  className="inline-flex items-center gap-2 rounded-md bg-purple px-4 py-2 text-sm font-medium text-white hover:bg-purple-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Plus size={16} />
+                  {hasTOTP ? 'TOTP подключён' : enroll.isPending ? 'Подключение...' : 'Подключить TOTP'}
+                </button>
+                <button
+                  onClick={() => handleEnroll('EMAIL_OTP')}
+                  disabled={enroll.isPending || hasEmailOTP}
+                  className="inline-flex items-center gap-2 rounded-md border border-border bg-white px-4 py-2 text-sm font-medium text-navy hover:bg-surface transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Plus size={16} />
+                  {hasEmailOTP ? 'Email OTP подключён' : enroll.isPending ? 'Подключение...' : 'Подключить Email OTP'}
+                </button>
+              </>
+            )
+          })()}
         </div>
 
         {enrollment && (
