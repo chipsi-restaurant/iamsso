@@ -16,9 +16,9 @@ import {
 type Tab = 'roles' | 'policies' | 'evaluate'
 
 const tabs: { key: Tab; label: string }[] = [
-  { key: 'roles', label: 'Roles' },
-  { key: 'policies', label: 'Policies' },
-  { key: 'evaluate', label: 'Evaluate' },
+  { key: 'roles', label: 'Роли' },
+  { key: 'policies', label: 'Политики' },
+  { key: 'evaluate', label: 'Проверка' },
 ]
 
 /* ---------- Delete wrappers (hooks need static id) ---------- */
@@ -70,7 +70,7 @@ function RolesTab() {
       {/* Inline create form */}
       <div className="flex items-end gap-3">
         <div className="flex-1">
-          <label className="block text-xs font-medium text-body mb-1">Name</label>
+          <label className="block text-xs font-medium text-body mb-1">Название</label>
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -79,11 +79,11 @@ function RolesTab() {
           />
         </div>
         <div className="flex-1">
-          <label className="block text-xs font-medium text-body mb-1">Description</label>
+          <label className="block text-xs font-medium text-body mb-1">Описание</label>
           <input
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Optional description"
+            placeholder="Необязательное описание"
             className="w-full border border-border rounded-md px-3 py-1.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-purple/40"
           />
         </div>
@@ -93,7 +93,7 @@ function RolesTab() {
           className="inline-flex items-center gap-1.5 bg-purple text-white px-4 py-1.5 rounded-md text-sm font-medium hover:bg-purple/90 disabled:opacity-50 transition-colors"
         >
           <Plus size={16} />
-          Create
+          Создать
         </button>
       </div>
 
@@ -102,9 +102,9 @@ function RolesTab() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-surface">
-              <th className="text-left px-4 py-2.5 font-medium text-body">Name</th>
-              <th className="text-left px-4 py-2.5 font-medium text-body">Description</th>
-              <th className="text-left px-4 py-2.5 font-medium text-body">Created</th>
+              <th className="text-left px-4 py-2.5 font-medium text-body">Название</th>
+              <th className="text-left px-4 py-2.5 font-medium text-body">Описание</th>
+              <th className="text-left px-4 py-2.5 font-medium text-body">Создан</th>
               <th className="w-10" />
             </tr>
           </thead>
@@ -176,7 +176,7 @@ function PoliciesTab() {
           className="inline-flex items-center gap-1.5 bg-purple text-white px-4 py-1.5 rounded-md text-sm font-medium hover:bg-purple/90 transition-colors"
         >
           <Plus size={16} />
-          Create Policy
+          Создать политику
         </button>
       </div>
 
@@ -185,12 +185,12 @@ function PoliciesTab() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-surface">
-              <th className="text-left px-4 py-2.5 font-medium text-body">Name</th>
-              <th className="text-left px-4 py-2.5 font-medium text-body">Role</th>
-              <th className="text-left px-4 py-2.5 font-medium text-body">Effect</th>
-              <th className="text-left px-4 py-2.5 font-medium text-body">Action</th>
-              <th className="text-left px-4 py-2.5 font-medium text-body">Resource Pattern</th>
-              <th className="text-left px-4 py-2.5 font-medium text-body">Priority</th>
+              <th className="text-left px-4 py-2.5 font-medium text-body">Название</th>
+              <th className="text-left px-4 py-2.5 font-medium text-body">Роль</th>
+              <th className="text-left px-4 py-2.5 font-medium text-body">Эффект</th>
+              <th className="text-left px-4 py-2.5 font-medium text-body">Действие</th>
+              <th className="text-left px-4 py-2.5 font-medium text-body">Паттерн ресурса</th>
+              <th className="text-left px-4 py-2.5 font-medium text-body">Приоритет</th>
               <th className="w-10" />
             </tr>
           </thead>
@@ -226,11 +226,11 @@ function PoliciesTab() {
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="bg-white rounded-lg shadow-lg w-full max-w-lg p-6 space-y-4">
-            <h3 className="text-lg font-semibold text-navy">Create Policy</h3>
+            <h3 className="text-lg font-semibold text-navy">Создать политику</h3>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2">
-                <label className="block text-xs font-medium text-body mb-1">Name</label>
+                <label className="block text-xs font-medium text-body mb-1">Название</label>
                 <input
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
@@ -238,20 +238,20 @@ function PoliciesTab() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-body mb-1">Role</label>
+                <label className="block text-xs font-medium text-body mb-1">Роль</label>
                 <select
                   value={form.role}
                   onChange={(e) => setForm({ ...form, role: e.target.value })}
                   className="w-full border border-border rounded-md px-3 py-1.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-purple/40"
                 >
-                  <option value="">Select role</option>
+                  <option value="">Выберите роль</option>
                   {roles?.map((r) => (
                     <option key={r.id} value={r.name}>{r.name}</option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium text-body mb-1">Effect</label>
+                <label className="block text-xs font-medium text-body mb-1">Эффект</label>
                 <select
                   value={form.effect}
                   onChange={(e) => setForm({ ...form, effect: e.target.value as 'ALLOW' | 'DENY' })}
@@ -262,13 +262,13 @@ function PoliciesTab() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium text-body mb-1">Action</label>
+                <label className="block text-xs font-medium text-body mb-1">Действие</label>
                 <select
                   value={form.action}
                   onChange={(e) => setForm({ ...form, action: e.target.value })}
                   className="w-full border border-border rounded-md px-3 py-1.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-purple/40"
                 >
-                  <option value="">Select action</option>
+                  <option value="">Выберите действие</option>
                   <option value="READ">READ</option>
                   <option value="CREATE">CREATE</option>
                   <option value="UPDATE">UPDATE</option>
@@ -276,7 +276,7 @@ function PoliciesTab() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium text-body mb-1">Resource Pattern</label>
+                <label className="block text-xs font-medium text-body mb-1">Паттерн ресурса</label>
                 <input
                   value={form.resourcePattern}
                   onChange={(e) => setForm({ ...form, resourcePattern: e.target.value })}
@@ -285,7 +285,7 @@ function PoliciesTab() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-body mb-1">Priority</label>
+                <label className="block text-xs font-medium text-body mb-1">Приоритет</label>
                 <input
                   type="number"
                   value={form.priority}
@@ -300,7 +300,7 @@ function PoliciesTab() {
                 onClick={() => { resetForm(); setModalOpen(false) }}
                 className="px-4 py-1.5 rounded-md text-sm font-medium text-body border border-border hover:bg-surface transition-colors"
               >
-                Cancel
+                Отмена
               </button>
               <button
                 onClick={handleCreate}
@@ -308,7 +308,7 @@ function PoliciesTab() {
                 className="inline-flex items-center gap-1.5 bg-purple text-white px-4 py-1.5 rounded-md text-sm font-medium hover:bg-purple/90 disabled:opacity-50 transition-colors"
               >
                 <Plus size={16} />
-                Create
+                Создать
               </button>
             </div>
           </div>
@@ -351,26 +351,26 @@ function EvaluateTab() {
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-body mb-1">Role</label>
+          <label className="block text-xs font-medium text-body mb-1">Роль</label>
           <select
             value={role}
             onChange={(e) => setRole(e.target.value)}
             className="w-full border border-border rounded-md px-3 py-1.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-purple/40"
           >
-            <option value="">Select role</option>
+            <option value="">Выберите роль</option>
             {roles?.map((r) => (
               <option key={r.id} value={r.name}>{r.name}</option>
             ))}
           </select>
         </div>
         <div>
-          <label className="block text-xs font-medium text-body mb-1">Action</label>
+          <label className="block text-xs font-medium text-body mb-1">Действие</label>
           <select
             value={action}
             onChange={(e) => setAction(e.target.value)}
             className="w-full border border-border rounded-md px-3 py-1.5 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-purple/40"
           >
-            <option value="">Select action</option>
+            <option value="">Выберите действие</option>
             <option value="READ">READ</option>
             <option value="CREATE">CREATE</option>
             <option value="UPDATE">UPDATE</option>
@@ -378,7 +378,7 @@ function EvaluateTab() {
           </select>
         </div>
         <div>
-          <label className="block text-xs font-medium text-body mb-1">Resource</label>
+          <label className="block text-xs font-medium text-body mb-1">Ресурс</label>
           <input
             value={resource}
             onChange={(e) => setResource(e.target.value)}
@@ -392,22 +392,22 @@ function EvaluateTab() {
           className="inline-flex items-center gap-1.5 bg-purple text-white px-4 py-1.5 rounded-md text-sm font-medium hover:bg-purple/90 disabled:opacity-50 transition-colors"
         >
           <Play size={16} />
-          Evaluate
+          Проверить
         </button>
       </div>
 
       {result && (
         <div className="bg-white border border-border rounded-md p-5 space-y-3">
           <div className="flex items-center gap-3">
-            <span className="text-sm font-medium text-body">Result:</span>
+            <span className="text-sm font-medium text-body">Результат:</span>
             <StatusBadge status={result.allowed ? 'ALLOW' : 'DENY'} />
           </div>
           <div className="text-sm text-body">
-            <span className="font-medium text-navy">Reason:</span> {result.reason}
+            <span className="font-medium text-navy">Причина:</span> {result.reason}
           </div>
           {result.policyId && (
             <div className="text-sm text-body">
-              <span className="font-medium text-navy">Policy ID:</span>{' '}
+              <span className="font-medium text-navy">ID политики:</span>{' '}
               <span className="font-mono text-xs">{result.policyId}</span>
             </div>
           )}
@@ -425,8 +425,8 @@ export default function PoliciesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-navy">Policies</h1>
-        <p className="text-body mt-1">Manage roles, authorization policies, and test access evaluation.</p>
+        <h1 className="text-2xl font-semibold text-navy">Политики</h1>
+        <p className="text-body mt-1">Управление ролями, политиками авторизации и проверка доступа.</p>
       </div>
 
       {/* Tab bar */}

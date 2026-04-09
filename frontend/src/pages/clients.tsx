@@ -32,7 +32,7 @@ function SecretBanner({
     <div className="bg-purple/10 border border-purple rounded-md px-4 py-3 flex items-center justify-between gap-4">
       <div className="min-w-0">
         <p className="text-sm font-medium text-navy">
-          Client secret (copy now — it will not be shown again):
+          Секрет клиента (скопируйте сейчас — он больше не будет показан):
         </p>
         <code className="text-sm text-purple break-all select-all">{secret}</code>
       </div>
@@ -43,14 +43,14 @@ function SecretBanner({
           className="inline-flex items-center gap-1.5 rounded-md border border-border bg-white px-3 py-1.5 text-sm font-medium text-navy hover:bg-surface transition-colors"
         >
           <Copy size={14} />
-          {copied ? 'Copied!' : 'Copy'}
+          {copied ? 'Скопировано!' : 'Копировать'}
         </button>
         <button
           type="button"
           onClick={onDismiss}
           className="text-body hover:text-navy text-sm underline"
         >
-          Dismiss
+          Скрыть
         </button>
       </div>
     </div>
@@ -105,12 +105,12 @@ function CreateClientModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div className="bg-white rounded-md shadow-lg border border-border w-full max-w-md mx-4">
         <div className="px-5 py-4 border-b border-border">
-          <h2 className="text-lg font-semibold text-navy">Create OAuth Client</h2>
+          <h2 className="text-lg font-semibold text-navy">Создать OAuth-клиент</h2>
         </div>
 
         <form onSubmit={submit} className="px-5 py-4 space-y-4">
           <label className="block">
-            <span className="text-sm font-medium text-navy">Client Name</span>
+            <span className="text-sm font-medium text-navy">Название клиента</span>
             <input
               required
               value={clientName}
@@ -121,7 +121,7 @@ function CreateClientModal({
 
           <label className="block">
             <span className="text-sm font-medium text-navy">
-              Grant Types <span className="text-body font-normal">(comma-separated)</span>
+              Типы грантов <span className="text-body font-normal">(через запятую)</span>
             </span>
             <input
               required
@@ -134,7 +134,7 @@ function CreateClientModal({
 
           <label className="block">
             <span className="text-sm font-medium text-navy">
-              Redirect URIs <span className="text-body font-normal">(comma-separated)</span>
+              URI перенаправления <span className="text-body font-normal">(через запятую)</span>
             </span>
             <input
               placeholder="https://app.example.com/callback"
@@ -146,7 +146,7 @@ function CreateClientModal({
 
           <label className="block">
             <span className="text-sm font-medium text-navy">
-              Scopes <span className="text-body font-normal">(comma-separated)</span>
+              Скоупы <span className="text-body font-normal">(через запятую)</span>
             </span>
             <input
               placeholder="openid, profile, email"
@@ -158,7 +158,7 @@ function CreateClientModal({
 
           {create.isError && (
             <p className="text-sm text-red-600">
-              {(create.error as Error).message ?? 'Failed to create client.'}
+              {(create.error as Error).message ?? 'Не удалось создать клиента.'}
             </p>
           )}
 
@@ -168,14 +168,14 @@ function CreateClientModal({
               onClick={onClose}
               className="rounded-md border border-border px-4 py-2 text-sm font-medium text-navy hover:bg-surface transition-colors"
             >
-              Cancel
+              Отмена
             </button>
             <button
               type="submit"
               disabled={create.isPending}
               className="rounded-md bg-purple px-4 py-2 text-sm font-medium text-white hover:bg-purple/90 transition-colors disabled:opacity-50"
             >
-              {create.isPending ? 'Creating...' : 'Create'}
+              {create.isPending ? 'Создание...' : 'Создать'}
             </button>
           </div>
         </form>
@@ -216,7 +216,7 @@ function ConfirmDialog({
             onClick={onCancel}
             className="rounded-md border border-border px-4 py-2 text-sm font-medium text-navy hover:bg-surface transition-colors"
           >
-            Cancel
+            Отмена
           </button>
           <button
             type="button"
@@ -228,7 +228,7 @@ function ConfirmDialog({
                 : 'bg-purple hover:bg-purple/90'
             }`}
           >
-            {pending ? 'Please wait...' : confirmLabel}
+            {pending ? 'Подождите...' : confirmLabel}
           </button>
         </div>
       </div>
@@ -254,7 +254,7 @@ function RotateButton({
     <>
       <button
         type="button"
-        title="Rotate secret"
+        title="Ротировать секрет"
         onClick={() => setOpen(true)}
         className="p-1 rounded hover:bg-surface text-body hover:text-purple transition-colors"
       >
@@ -262,9 +262,9 @@ function RotateButton({
       </button>
       {open && (
         <ConfirmDialog
-          title="Rotate client secret"
-          description="This will invalidate the current secret immediately. The new secret will be shown once."
-          confirmLabel="Rotate"
+          title="Ротировать секрет клиента"
+          description="Текущий секрет будет немедленно аннулирован. Новый секрет будет показан один раз."
+          confirmLabel="Ротировать"
           pending={rotate.isPending}
           onCancel={() => setOpen(false)}
           onConfirm={() =>
@@ -295,7 +295,7 @@ function DeleteButton({
     <>
       <button
         type="button"
-        title="Delete client"
+        title="Удалить клиент"
         onClick={() => setOpen(true)}
         className="p-1 rounded hover:bg-surface text-body hover:text-red-600 transition-colors"
       >
@@ -303,9 +303,9 @@ function DeleteButton({
       </button>
       {open && (
         <ConfirmDialog
-          title="Delete client"
-          description={`Are you sure you want to delete "${clientName}"? This action cannot be undone.`}
-          confirmLabel="Delete"
+          title="Удалить клиент"
+          description={`Вы уверены, что хотите удалить "${clientName}"? Это действие нельзя отменить.`}
+          confirmLabel="Удалить"
           destructive
           pending={del.isPending}
           onCancel={() => setOpen(false)}
@@ -332,8 +332,8 @@ export default function ClientsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-navy">OAuth Clients</h1>
-          <p className="text-body mt-1">Manage OAuth 2.0 client applications.</p>
+          <h1 className="text-2xl font-semibold text-navy">OAuth-клиенты</h1>
+          <p className="text-body mt-1">Управление клиентскими приложениями OAuth 2.0.</p>
         </div>
         <button
           type="button"
@@ -341,7 +341,7 @@ export default function ClientsPage() {
           className="inline-flex items-center gap-1.5 rounded-md bg-purple px-4 py-2 text-sm font-medium text-white hover:bg-purple/90 transition-colors"
         >
           <Plus size={16} />
-          Create client
+          Создать клиент
         </button>
       </div>
 
@@ -359,24 +359,24 @@ export default function ClientsPage() {
           <thead>
             <tr className="border-b border-border bg-surface">
               <th className="text-left px-4 py-2.5 font-medium text-body">Client ID</th>
-              <th className="text-left px-4 py-2.5 font-medium text-body">Name</th>
-              <th className="text-left px-4 py-2.5 font-medium text-body">Grant Types</th>
-              <th className="text-left px-4 py-2.5 font-medium text-body">Scopes</th>
-              <th className="text-left px-4 py-2.5 font-medium text-body">Created</th>
-              <th className="text-right px-4 py-2.5 font-medium text-body">Actions</th>
+              <th className="text-left px-4 py-2.5 font-medium text-body">Название</th>
+              <th className="text-left px-4 py-2.5 font-medium text-body">Типы грантов</th>
+              <th className="text-left px-4 py-2.5 font-medium text-body">Скоупы</th>
+              <th className="text-left px-4 py-2.5 font-medium text-body">Создан</th>
+              <th className="text-right px-4 py-2.5 font-medium text-body">Действия</th>
             </tr>
           </thead>
           <tbody>
             {isLoading ? (
               <tr>
                 <td colSpan={6} className="px-4 py-6 text-center text-body">
-                  Loading clients...
+                  Загрузка клиентов...
                 </td>
               </tr>
             ) : !clients?.length ? (
               <tr>
                 <td colSpan={6} className="px-4 py-6 text-center text-body">
-                  No clients found. Create one to get started.
+                  Клиенты не найдены. Создайте первого клиента.
                 </td>
               </tr>
             ) : (
