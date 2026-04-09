@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { exchangeCodeForToken, storeTokens } from '@/lib/auth'
 import { useAuth } from '@/lib/auth-context'
@@ -8,8 +8,12 @@ export default function CallbackPage() {
   const navigate = useNavigate()
   const { setToken } = useAuth()
   const [error, setError] = useState<string | null>(null)
+  const exchanged = useRef(false)
 
   useEffect(() => {
+    if (exchanged.current) return
+    exchanged.current = true
+
     const code = searchParams.get('code')
     const state = searchParams.get('state')
     const storedState = sessionStorage.getItem('pkce_state')
@@ -24,12 +28,13 @@ export default function CallbackPage() {
       return
     }
 
+    sessionStorage.removeItem('pkce_verifier')
+    sessionStorage.removeItem('pkce_state')
+
     exchangeCodeForToken(code, codeVerifier)
       .then((tokens) => {
         storeTokens(tokens.access_token, tokens.refresh_token)
         setToken(tokens.access_token)
-        sessionStorage.removeItem('pkce_verifier')
-        sessionStorage.removeItem('pkce_state')
         navigate('/', { replace: true })
       })
       .catch((err) => {
