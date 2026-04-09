@@ -39,13 +39,29 @@ class MfaService(
 
     @Transactional
     fun enroll(userId: UUID, request: EnrollMfaFactorRequest, email: String?): MfaEnrollmentResponse {
-        val type = MfaFactorType.valueOf(request.factorType.name)
+        val type = MfaFactorType.valueOf(request.factorType!!.name)
 
         factorRepo.findByUserIdAndFactorType(userId, type)?.let {
             throw MfaFactorAlreadyExistsException(type.name)
         }
 
-        val secret = if (type == MfaFactorType.TOTP) secretGen.generate() else null
+        val secret: String
+        var provisioningUri: String? = null
+
+        when (type) {
+            MfaFactorType.TOTP -> {
+                secret = secretGen.generate()
+                val account = email ?: userId.toString()
+                provisioningUri = "otpauth://totp/${props.totp.issuer}:$account?secret=$secret&issuer=${props.totp.issuer}"
+            }
+            MfaFactorType.EMAIL_OTP -> {
+                secret = generateOtpCode()
+                if (email != null) {
+                    events.sendEmailOtp(userId, email, secret, Instant.now().plusSeconds(props.emailOtp.ttlSeconds))
+                }
+            }
+        }
+
         val factor = MfaFactorEntity(
             userId = userId,
             factorType = type,
@@ -54,25 +70,16 @@ class MfaService(
         )
         factorRepo.save(factor)
 
-        if (type == MfaFactorType.EMAIL_OTP && email != null) {
-            val code = (100_000..999_999).random().toString()
-            factor.secret = code
-            events.sendEmailOtp(userId, email, code, Instant.now().plusSeconds(props.emailOtp.ttlSeconds))
-        }
-
-        val uri = if (type == MfaFactorType.TOTP && secret != null) {
-            val account = email ?: userId.toString()
-            "otpauth://totp/${props.totp.issuer}:$account?secret=$secret&issuer=${props.totp.issuer}"
-        } else null
-
         return MfaEnrollmentResponse(
             factorId = factor.id,
             factorType = factor.factorType.toContract(),
             status = factor.status.toContract(),
-            secret = secret,
-            provisioningUri = uri,
+            secret = if (type == MfaFactorType.TOTP) secret else null,
+            provisioningUri = provisioningUri,
         )
     }
+
+    private fun generateOtpCode(): String = (100_000..999_999).random().toString()
 
     @Transactional
     fun confirm(userId: UUID, factorId: UUID, code: String): MfaFactorResponse {
@@ -132,7 +139,7 @@ class MfaService(
     fun sendOtp(userId: UUID, email: String) {
         val factor = factorRepo.findByUserIdAndFactorTypeAndStatus(userId, MfaFactorType.EMAIL_OTP, MfaFactorStatus.ACTIVE)
             ?: throw NoActiveFactorException()
-        val code = (100_000..999_999).random().toString()
+        val code = generateOtpCode()
         factor.secret = code
         events.sendEmailOtp(userId, email, code, Instant.now().plusSeconds(props.emailOtp.ttlSeconds))
     }
