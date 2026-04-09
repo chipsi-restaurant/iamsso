@@ -32,7 +32,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = () => {
     clearTokens()
     setTokenState(null)
-    window.location.href = '/login'
+    // Redirect через Gateway к auth-service logout для очистки SSO cookie
+    window.location.href = 'http://localhost:8090/api/v1/sessions/logout?post_logout_redirect_uri=http://localhost:3000/login'
   }
 
   useEffect(() => {

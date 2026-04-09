@@ -39,10 +39,29 @@ class SessionController(
         request: HttpServletRequest,
         response: HttpServletResponse,
     ) {
-        val session = resolveSession(request)
-        refreshTokenRepository.revokeAllBySessionId(UUID.fromString(session.sessionId))
-        ssoSessionService.delete(session.sessionId)
-        authEventPublisher.publishSessionDestroyed(session.sessionId, session.userId, "logout")
+        doLogout(request, response, postLogoutUri)
+    }
+
+    @GetMapping("/logout")
+    @Transactional
+    fun logoutGet(
+        @RequestParam("post_logout_redirect_uri", required = false) postLogoutUri: String?,
+        request: HttpServletRequest,
+        response: HttpServletResponse,
+    ) {
+        doLogout(request, response, postLogoutUri)
+    }
+
+    private fun doLogout(request: HttpServletRequest, response: HttpServletResponse, postLogoutUri: String?) {
+        val sessionId = request.cookies?.find { it.name == "SSO_SESSION" }?.value
+        if (sessionId != null) {
+            val session = ssoSessionService.get(sessionId)
+            if (session != null) {
+                refreshTokenRepository.revokeAllBySessionId(UUID.fromString(session.sessionId))
+                ssoSessionService.delete(session.sessionId)
+                authEventPublisher.publishSessionDestroyed(session.sessionId, session.userId, "logout")
+            }
+        }
         clearCookie(response)
         if (postLogoutUri != null) {
             response.sendRedirect(postLogoutUri)
