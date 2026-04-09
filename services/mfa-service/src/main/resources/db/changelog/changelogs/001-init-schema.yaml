@@ -1,0 +1,60 @@
+databaseChangeLog:
+  - changeSet:
+      id: 001-create-schema
+      author: Arseniy Kolyshkin
+      changes:
+        - sql:
+            sql: CREATE SCHEMA IF NOT EXISTS iamsso_mfa
+
+  - changeSet:
+      id: 001-create-mfa-factors
+      author: Arseniy Kolyshkin
+      changes:
+        - createTable:
+            schemaName: iamsso_mfa
+            tableName: mfa_factors
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: user_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: factor_type
+                  type: varchar(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(20)
+                  defaultValue: PENDING
+                  constraints:
+                    nullable: false
+              - column:
+                  name: display_name
+                  type: varchar(100)
+              - column:
+                  name: secret
+                  type: varchar(500)
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            schemaName: iamsso_mfa
+            tableName: mfa_factors
+            constraintName: uq_user_factor_type
+            columnNames: user_id, factor_type
+        - createIndex:
+            schemaName: iamsso_mfa
+            tableName: mfa_factors
+            indexName: idx_mfa_user_id
+            columns:
+              - column: { name: user_id }
