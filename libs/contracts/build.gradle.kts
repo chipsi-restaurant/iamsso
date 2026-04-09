@@ -55,6 +55,11 @@ val apiSpecs = listOf(
         specFile = "$projectDir/openapi/auth-service-api.yaml",
         basePackage = "org.iamsso.contracts.auth",
     ),
+    ApiSpec(
+        name = "mfa-service",
+        specFile = "$projectDir/openapi/mfa-service-api.yaml",
+        basePackage = "org.iamsso.contracts.mfa",
+    ),
 )
 
 val generatorConfig = mapOf(

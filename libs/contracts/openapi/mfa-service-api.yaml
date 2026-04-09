@@ -1,0 +1,245 @@
+openapi: 3.0.3
+info:
+  title: MFA Service API
+  version: 1.0.0
+  description: Multi-Factor Authentication microservice — manages enrollment, verification and lifecycle of MFA factors (TOTP, Email OTP).
+
+servers:
+  - url: http://localhost:8083
+    description: Local development
+
+paths:
+  /api/v1/mfa/{userId}/factors:
+    parameters:
+      - $ref: '#/components/parameters/UserIdParam'
+    get:
+      operationId: listFactors
+      tags: [MFA]
+      summary: List MFA factors
+      responses:
+        '200':
+          description: List of factors
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MfaFactorResponse'
+    post:
+      operationId: enrollFactor
+      tags: [MFA]
+      summary: Enroll new MFA factor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EnrollMfaFactorRequest'
+      responses:
+        '201':
+          description: Enrollment started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MfaEnrollmentResponse'
+        '409':
+          description: Factor type already exists
+
+  /api/v1/mfa/{userId}/factors/{factorId}/confirm:
+    parameters:
+      - $ref: '#/components/parameters/UserIdParam'
+      - $ref: '#/components/parameters/FactorIdParam'
+    post:
+      operationId: confirmFactor
+      tags: [MFA]
+      summary: Confirm factor with code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfirmMfaRequest'
+      responses:
+        '200':
+          description: Factor confirmed and activated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MfaFactorResponse'
+        '400':
+          description: Invalid code
+
+  /api/v1/mfa/{userId}/factors/{factorId}:
+    parameters:
+      - $ref: '#/components/parameters/UserIdParam'
+      - $ref: '#/components/parameters/FactorIdParam'
+    delete:
+      operationId: removeFactor
+      tags: [MFA]
+      summary: Remove MFA factor
+      responses:
+        '204':
+          description: Factor removed
+        '404':
+          description: Factor not found
+
+  /api/v1/mfa/{userId}/verify:
+    parameters:
+      - $ref: '#/components/parameters/UserIdParam'
+    post:
+      operationId: verifyCode
+      tags: [MFA]
+      summary: Verify MFA code (used by auth-service during login)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyMfaRequest'
+      responses:
+        '200':
+          description: Verification result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerifyMfaResponse'
+
+  /api/v1/mfa/{userId}/status:
+    parameters:
+      - $ref: '#/components/parameters/UserIdParam'
+    get:
+      operationId: getStatus
+      tags: [MFA]
+      summary: Get MFA status
+      responses:
+        '200':
+          description: MFA status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MfaStatusResponse'
+
+  /api/v1/mfa/{userId}/send-otp:
+    parameters:
+      - $ref: '#/components/parameters/UserIdParam'
+    post:
+      operationId: sendOtp
+      tags: [MFA]
+      summary: Send email OTP code
+      responses:
+        '204':
+          description: OTP sent
+
+components:
+  parameters:
+    UserIdParam:
+      name: userId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    FactorIdParam:
+      name: factorId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    MfaFactorType:
+      type: string
+      enum: [TOTP, EMAIL_OTP]
+
+    MfaFactorStatus:
+      type: string
+      enum: [PENDING, ACTIVE]
+
+    EnrollMfaFactorRequest:
+      type: object
+      required: [factorType]
+      properties:
+        factorType:
+          $ref: '#/components/schemas/MfaFactorType'
+        displayName:
+          type: string
+          maxLength: 100
+
+    ConfirmMfaRequest:
+      type: object
+      required: [code]
+      properties:
+        code:
+          type: string
+          pattern: '^\d{6}$'
+
+    VerifyMfaRequest:
+      type: object
+      required: [code]
+      properties:
+        code:
+          type: string
+          pattern: '^\d{6}$'
+        factorType:
+          $ref: '#/components/schemas/MfaFactorType'
+
+    MfaFactorResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        factorType:
+          $ref: '#/components/schemas/MfaFactorType'
+        status:
+          $ref: '#/components/schemas/MfaFactorStatus'
+        displayName:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    MfaEnrollmentResponse:
+      type: object
+      properties:
+        factorId:
+          type: string
+          format: uuid
+        factorType:
+          $ref: '#/components/schemas/MfaFactorType'
+        status:
+          $ref: '#/components/schemas/MfaFactorStatus'
+        secret:
+          type: string
+          nullable: true
+        provisioningUri:
+          type: string
+          nullable: true
+
+    VerifyMfaResponse:
+      type: object
+      properties:
+        valid:
+          type: boolean
+
+    MfaStatusResponse:
+      type: object
+      properties:
+        userId:
+          type: string
+          format: uuid
+        mfaEnabled:
+          type: boolean
+        activeFactors:
+          type: array
+          items:
+            $ref: '#/components/schemas/MfaFactorType'
+
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
