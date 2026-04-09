@@ -1,0 +1,17 @@
+spring:
+  mail:
+    host: localhost
+    port: 25
+    username: test
+    password: test
+  kafka:
+    bootstrap-servers: ${spring.embedded.kafka.brokers}
+    consumer:
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
+app:
+  mail:
+    from: test@iamsso.local
+  base-url: http://localhost:8090
