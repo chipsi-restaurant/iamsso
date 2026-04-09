@@ -98,7 +98,7 @@ class AuthorizationController(
             nonce = nonce,
         )
         authRequestService.save(authRequest, props.authorizationRequest.ttlSeconds)
-        return RedirectView("${props.loginPage.url}/login?auth_request_id=${authRequest.authRequestId}")
+        return RedirectView("/login?auth_request_id=${authRequest.authRequestId}")
     }
 
     @PostMapping("/oauth2/authorize/callback", consumes = ["application/x-www-form-urlencoded"])
@@ -119,12 +119,12 @@ class AuthorizationController(
             ?: return run {
                 val newId = resaveRequest(authRequest)
                 authEventPublisher.publishLoginFailed(username, authRequest.clientId, "invalid_credentials")
-                RedirectView("$loginPage/login?auth_request_id=$newId&error=invalid_credentials")
+                RedirectView("/login?auth_request_id=$newId&error=invalid_credentials")
             }
 
         if (user.status != "ACTIVE") {
             val newId = resaveRequest(authRequest)
-            return RedirectView("$loginPage/login?auth_request_id=$newId&error=account_disabled")
+            return RedirectView("/login?auth_request_id=$newId&error=account_disabled")
         }
 
         val creds = userServiceClient.verifyCredentials(user.id, password)
@@ -132,7 +132,7 @@ class AuthorizationController(
             val newId = resaveRequest(authRequest)
             val reason = if (creds?.lockedUntil != null) "account_locked" else "invalid_credentials"
             authEventPublisher.publishLoginFailed(username, authRequest.clientId, reason)
-            return RedirectView("$loginPage/login?auth_request_id=$newId&error=$reason")
+            return RedirectView("/login?auth_request_id=$newId&error=$reason")
         }
 
         val session = ssoSessionService.create(user.id, authRequest.clientId)
