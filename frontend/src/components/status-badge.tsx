@@ -5,6 +5,7 @@ const statusStyles: Record<string, string> = {
   PENDING_VERIFICATION: 'bg-yellow-50 text-yellow-700 border-yellow-200',
   LOCKED: 'bg-red-50 text-ruby border-red-200',
   SUSPENDED: 'bg-red-50 text-ruby border-red-200',
+  PENDING: 'bg-yellow-50 text-yellow-700 border-yellow-200',
   DELETED: 'bg-gray-100 text-gray-500 border-gray-200',
   ALLOW: 'bg-green/15 text-green-text border-green/30',
   DENY: 'bg-red-50 text-ruby border-red-200',
