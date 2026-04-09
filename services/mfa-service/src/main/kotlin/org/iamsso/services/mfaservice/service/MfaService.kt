@@ -107,21 +107,27 @@ class MfaService(
     fun verify(userId: UUID, request: VerifyMfaRequest): VerifyMfaResponse {
         val requestedType = request.factorType?.let { MfaFactorType.valueOf(it.name) }
 
-        val factor = if (requestedType != null) {
-            factorRepo.findByUserIdAndFactorTypeAndStatus(userId, requestedType, MfaFactorStatus.ACTIVE)
+        if (requestedType != null) {
+            val factor = factorRepo.findByUserIdAndFactorTypeAndStatus(userId, requestedType, MfaFactorStatus.ACTIVE)
                 ?: throw NoActiveFactorException()
-        } else {
-            factorRepo.findAllByUserId(userId)
-                .firstOrNull { it.status == MfaFactorStatus.ACTIVE }
-                ?: throw NoActiveFactorException()
+            val valid = verifyCode(factor, request.code!!)
+            return VerifyMfaResponse(valid = valid)
         }
 
-        val valid = when (factor.factorType) {
-            MfaFactorType.TOTP -> codeVerifier.isValidCode(factor.secret, request.code)
-            MfaFactorType.EMAIL_OTP -> factor.secret == request.code
-        }
+        // No specific type — try all active factors, TOTP first
+        val activeFactors = factorRepo.findAllByUserId(userId)
+            .filter { it.status == MfaFactorStatus.ACTIVE }
+            .sortedBy { if (it.factorType == MfaFactorType.TOTP) 0 else 1 }
 
+        if (activeFactors.isEmpty()) throw NoActiveFactorException()
+
+        val valid = activeFactors.any { verifyCode(it, request.code!!) }
         return VerifyMfaResponse(valid = valid)
+    }
+
+    private fun verifyCode(factor: MfaFactorEntity, code: String): Boolean = when (factor.factorType) {
+        MfaFactorType.TOTP -> codeVerifier.isValidCode(factor.secret, code)
+        MfaFactorType.EMAIL_OTP -> factor.secret == code
     }
 
     @Transactional(readOnly = true)
