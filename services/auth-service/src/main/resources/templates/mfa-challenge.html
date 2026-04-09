@@ -54,14 +54,33 @@
             font-size: 18px;
             font-weight: 300;
             color: #061b31;
-            margin-bottom: 24px;
+            margin-bottom: 8px;
             letter-spacing: -0.18px;
+        }
+
+        .hint {
+            font-size: 13px;
+            font-weight: 300;
+            color: #64748d;
+            margin-bottom: 20px;
         }
 
         .error {
             background: rgba(234,34,97,0.06);
             border: 1px solid rgba(234,34,97,0.2);
             color: #ea2261;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 400;
+            margin-bottom: 16px;
+            text-align: left;
+        }
+
+        .success {
+            background: rgba(21,190,83,0.06);
+            border: 1px solid rgba(21,190,83,0.2);
+            color: #108c3d;
             padding: 8px 12px;
             border-radius: 4px;
             font-size: 13px;
@@ -99,7 +118,7 @@
             box-shadow: 0 0 0 2px rgba(83,58,253,0.08);
         }
 
-        button {
+        .btn-primary {
             width: 100%;
             padding: 10px 16px;
             background: #533afd;
@@ -113,8 +132,28 @@
             transition: background 0.15s;
             margin-top: 8px;
         }
-        button:hover { background: #4434d4; }
-        button:active { background: #2e2b8c; }
+        .btn-primary:hover { background: #4434d4; }
+        .btn-primary:active { background: #2e2b8c; }
+
+        .divider {
+            margin: 20px 0;
+            border: none;
+            border-top: 1px solid #e5edf5;
+        }
+
+        .btn-link {
+            display: inline-block;
+            background: none;
+            border: none;
+            color: #533afd;
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 400;
+            cursor: pointer;
+            text-decoration: none;
+            transition: color 0.15s;
+        }
+        .btn-link:hover { color: #4434d4; text-decoration: underline; }
 
         .footer {
             margin-top: 24px;
@@ -132,8 +171,14 @@
     <div class="card">
         <h2>Двухфакторная аутентификация</h2>
 
-        <div class="error" th:if="${error == 'invalid_code'}">Неверный код.</div>
-        <div class="error" th:if="${error == 'mfa_expired'}">Сессия MFA истекла.</div>
+        <!-- TOTP primary -->
+        <p class="hint" th:if="${factorTypes.contains('TOTP')}">Введите код из приложения-аутентификатора</p>
+        <!-- EMAIL_OTP only -->
+        <p class="hint" th:if="${!factorTypes.contains('TOTP') and factorTypes.contains('EMAIL_OTP')}">Введите код, отправленный на вашу почту</p>
+
+        <div class="error" th:if="${error == 'invalid_code'}">Неверный код. Попробуйте снова.</div>
+        <div class="error" th:if="${error == 'mfa_expired'}">Сессия MFA истекла. Войдите заново.</div>
+        <div class="success" th:if="${error == 'otp_sent'}">Код отправлен на вашу почту.</div>
 
         <form method="post" th:action="@{/mfa-challenge}">
             <input type="hidden" name="challenge_id" th:value="${challengeId}"/>
@@ -143,11 +188,20 @@
                 <input id="mfa_code" type="text" name="mfa_code" inputmode="numeric" pattern="\d{6}" maxlength="6" autofocus required placeholder="000000"/>
             </div>
 
-            <button type="submit">Подтвердить</button>
+            <button type="submit" class="btn-primary">Подтвердить</button>
         </form>
+
+        <!-- Fallback to email if both TOTP and EMAIL_OTP are active -->
+        <th:block th:if="${factorTypes.contains('TOTP') and factorTypes.contains('EMAIL_OTP')}">
+            <hr class="divider"/>
+            <form method="post" th:action="@{/mfa-challenge/send-otp}">
+                <input type="hidden" name="challenge_id" th:value="${challengeId}"/>
+                <button type="submit" class="btn-link">Отправить код на почту</button>
+            </form>
+        </th:block>
     </div>
 
-    <p class="footer">Введите код из приложения-аутентификатора</p>
+    <p class="footer">Защищено двухфакторной аутентификацией</p>
 </div>
 </body>
 </html>

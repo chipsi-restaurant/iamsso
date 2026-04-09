@@ -14,10 +14,13 @@ import jakarta.servlet.http.Cookie
 import jakarta.servlet.http.HttpServletResponse
 import java.util.UUID
 
+private val log = org.slf4j.LoggerFactory.getLogger(MfaChallengeController::class.java)
+
 @Controller
 class MfaChallengeController(
     private val mfaChallengeService: MfaChallengeService,
     private val mfaServiceClient: MfaServiceClient,
+    private val userServiceClient: UserServiceClient,
     private val ssoSessionService: SsoSessionService,
     private val authCodeStore: AuthorizationCodeStore,
     private val authEventPublisher: AuthEventPublisher,
@@ -88,5 +91,20 @@ class MfaChallengeController(
             if (authRequest.state != null) append("&state=${authRequest.state}")
         }
         return RedirectView(location)
+    }
+
+    @PostMapping("/mfa-challenge/send-otp")
+    fun sendOtp(
+        @RequestParam("challenge_id") challengeId: String,
+    ): RedirectView {
+        val challenge = mfaChallengeService.get(challengeId)
+            ?: return RedirectView("/login?error=mfa_expired")
+
+        val user = userServiceClient.getById(challenge.userId)
+        if (user?.email != null) {
+            mfaServiceClient.sendOtp(challenge.userId, user.email!!)
+        }
+
+        return RedirectView("/mfa-challenge?challenge_id=$challengeId&error=otp_sent")
     }
 }
