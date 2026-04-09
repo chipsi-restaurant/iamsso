@@ -50,8 +50,8 @@ class AuthCodeGrantHandler(
             clientId = client.clientId,
             scopes = scopes,
             sessionId = codeData.sessionId,
-            email = null,
-            emailVerified = null,
+            email = userData?.email,
+            emailVerified = userData?.emailVerified,
             role = userData?.role,
             ttlSeconds = client.accessTokenTtlSeconds.toLong(),
         )
