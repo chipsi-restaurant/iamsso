@@ -72,3 +72,7 @@ app:
     ttl-seconds: 86400
   authorization-request:
     ttl-seconds: 300
+  mfa-challenge:
+    ttl-seconds: 300
+  mfa-service:
+    base-url: http://localhost:8083

@@ -14,6 +14,8 @@ data class AppProperties(
     val admin: AdminProps = AdminProps(),
     val ssoSession: SsoSessionProps = SsoSessionProps(),
     val authorizationRequest: AuthorizationRequestProps = AuthorizationRequestProps(),
+    val mfaChallenge: MfaChallengeProps = MfaChallengeProps(),
+    val mfaService: MfaServiceProps = MfaServiceProps(),
 ) {
     data class JwtProps(
         val accessTokenTtlSeconds: Long = 3600,
@@ -33,4 +35,6 @@ data class AppProperties(
     data class AdminProps(val scope: String = "iam:admin")
     data class SsoSessionProps(val ttlSeconds: Long = 86400)
     data class AuthorizationRequestProps(val ttlSeconds: Long = 300)
+    data class MfaChallengeProps(val ttlSeconds: Long = 300)
+    data class MfaServiceProps(val baseUrl: String = "http://localhost:8083")
 }
