@@ -27,7 +27,7 @@ class SecurityConfig(private val jwtKeyProvider: JwtKeyProvider) {
             .authorizeHttpRequests { it.anyRequest().permitAll() }
             .build()
 
-    // Chain 2: Admin API endpoints — /api/v1/* — requires Bearer JWT with scope iam:admin
+    // Chain 2: API endpoints — /api/v1/* — permitAll (authorization handled by API Gateway + Policy Service)
     @Bean
     @Order(2)
     fun apiFilterChain(http: HttpSecurity): SecurityFilterChain =
@@ -35,10 +35,7 @@ class SecurityConfig(private val jwtKeyProvider: JwtKeyProvider) {
             .securityMatcher("/api/v1/**")
             .csrf { it.disable() }
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
-            .authorizeHttpRequests { it.anyRequest().hasAuthority("SCOPE_iam:admin") }
-            .oauth2ResourceServer { oauth2 ->
-                oauth2.jwt { jwt -> jwt.decoder(localJwtDecoder()) }
-            }
+            .authorizeHttpRequests { it.anyRequest().permitAll() }
             .build()
 
     @Bean
