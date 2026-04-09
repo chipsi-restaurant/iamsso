@@ -50,8 +50,8 @@ class JwtAuthenticationFilter(
                 val mutatedExchange = exchange.mutate().request(mutatedRequest).build()
                 chain.filter(mutatedExchange)
             }
-            .onErrorResume(JwtException::class.java) { e ->
-                unauthorized(exchange, e.message ?: "Invalid token")
+            .onErrorResume { e ->
+                unauthorized(exchange, "Failed to validate the token")
             }
     }
 
