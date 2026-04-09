@@ -21,6 +21,16 @@ class MfaServiceClient(props: AppProperties) {
             .body(MfaStatus::class.java)
     }
 
+    fun sendOtp(userId: UUID, email: String) {
+        try {
+            restClient.post()
+                .uri("/api/v1/mfa/$userId/send-otp")
+                .headers { it.set("X-User-Email", email) }
+                .retrieve()
+                .toBodilessEntity()
+        } catch (_: RestClientResponseException) {}
+    }
+
     fun verify(userId: UUID, code: String, factorType: String? = null): MfaVerifyResult? = runCatchingRest {
         val body = mutableMapOf<String, Any>("code" to code)
         if (factorType != null) body["factorType"] = factorType

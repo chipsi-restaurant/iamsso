@@ -143,6 +143,10 @@ class AuthorizationController(
         // Check if MFA is required
         val mfaStatus = mfaServiceClient.getStatus(user.id)
         if (mfaStatus != null && mfaStatus.mfaEnabled) {
+            // Send OTP if EMAIL_OTP is among active factors
+            if ("EMAIL_OTP" in mfaStatus.activeFactors && user.email != null) {
+                mfaServiceClient.sendOtp(user.id, user.email!!)
+            }
             val challenge = MfaChallenge(
                 userId = user.id,
                 authRequest = authRequest,
