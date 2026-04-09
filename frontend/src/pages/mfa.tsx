@@ -148,7 +148,9 @@ export default function MfaPage() {
 
         {enrollment && (
           <div className="mt-5 rounded-md border border-border bg-surface p-4 space-y-3">
-            <h3 className="text-sm font-semibold text-navy">Настройка {enrollment.factorType}</h3>
+            <h3 className="text-sm font-semibold text-navy">
+              Настройка {enrollment.factorType === 'TOTP' ? 'TOTP (приложение-аутентификатор)' : 'Email OTP (код на почту)'}
+            </h3>
             <p className="text-sm text-body">
               Статус: <StatusBadge status={enrollment.status} />
             </p>
@@ -181,7 +183,9 @@ export default function MfaPage() {
               </div>
             )}
             <p className="text-xs text-body">
-              Введите код из приложения-аутентификатора в таблице ниже для подтверждения фактора.
+              {enrollment.factorType === 'TOTP'
+                ? 'Введите код из приложения-аутентификатора в таблице ниже для подтверждения.'
+                : 'Введите код, отправленный на вашу почту, в таблице ниже для подтверждения.'}
             </p>
             <button
               onClick={() => setEnrollment(null)}
