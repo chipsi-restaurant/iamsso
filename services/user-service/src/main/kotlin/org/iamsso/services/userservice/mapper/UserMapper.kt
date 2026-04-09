@@ -1,18 +1,10 @@
 package org.iamsso.services.userservice.mapper
 
 import org.iamsso.contracts.user.model.CredentialsVerificationResponse
-import org.iamsso.contracts.user.model.MfaEnrollmentResponse
-import org.iamsso.contracts.user.model.MfaFactorResponse
-import org.iamsso.contracts.user.model.MfaFactorStatus
-import org.iamsso.contracts.user.model.MfaFactorType
-import org.iamsso.contracts.user.model.MfaStatusResponse
 import org.iamsso.contracts.user.model.PagedUserResponse
 import org.iamsso.contracts.user.model.UserProfileResponse
 import org.iamsso.contracts.user.model.UserResponse
 import org.iamsso.contracts.user.model.UserStatus
-import org.iamsso.services.userservice.entity.MfaFactorEntity
-import org.iamsso.services.userservice.entity.MfaFactorStatus as EntityMfaFactorStatus
-import org.iamsso.services.userservice.entity.MfaFactorType as EntityMfaFactorType
 import org.iamsso.services.userservice.entity.UserStatus as EntityUserStatus
 import org.iamsso.services.userservice.entity.UserEntity
 import org.iamsso.services.userservice.entity.UserProfileEntity
@@ -28,7 +20,7 @@ object UserMapper {
         displayName = e.displayName,
         status = UserStatus.valueOf(e.status.name),
         emailVerified = e.emailVerified,
-        mfaEnabled = e.mfaEnabled,
+        mfaEnabled = false,
         locale = e.locale,
         role = e.role,
         createdAt = e.createdAt,
@@ -63,39 +55,6 @@ object UserMapper {
         locale = user.locale,
         updatedAt = profile?.updatedAt ?: user.updatedAt,
     )
-
-    fun toMfaFactorResponse(e: MfaFactorEntity) = MfaFactorResponse(
-        id = e.id,
-        factorType = MfaFactorType.valueOf(e.factorType.name),
-        status = MfaFactorStatus.valueOf(e.status.name),
-        displayName = e.displayName,
-        createdAt = e.createdAt,
-    )
-
-    fun toMfaEnrollmentResponse(factor: MfaFactorEntity, secret: String?, provisioningUri: String?) =
-        MfaEnrollmentResponse(
-            factorId = factor.id,
-            factorType = MfaFactorType.valueOf(factor.factorType.name),
-            status = MfaFactorStatus.valueOf(factor.status.name),
-            secret = secret,
-            provisioningUri = provisioningUri,
-        )
-
-    fun toMfaStatusResponse(userId: UUID, factors: List<MfaFactorEntity>): MfaStatusResponse {
-        val active = factors.filter { it.status == EntityMfaFactorStatus.ACTIVE }
-        return MfaStatusResponse(
-            userId = userId,
-            mfaEnabled = active.isNotEmpty(),
-            activeFactors = active.map { it.factorType.toContract() },
-        )
-    }
-
-    fun EntityMfaFactorType.toContract(): MfaFactorType {
-        return when (this) {
-            EntityMfaFactorType.TOTP -> MfaFactorType.TOTP
-            EntityMfaFactorType.EMAIL_OTP -> MfaFactorType.EMAIL_OTP
-        }
-    }
 
     fun UserStatus.toEntity(): EntityUserStatus {
         return when (this) {

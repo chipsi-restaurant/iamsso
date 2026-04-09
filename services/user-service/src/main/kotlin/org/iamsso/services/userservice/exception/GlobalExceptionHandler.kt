@@ -10,15 +10,15 @@ import org.springframework.web.bind.annotation.RestControllerAdvice
 @RestControllerAdvice
 class GlobalExceptionHandler {
 
-    @ExceptionHandler(UserNotFoundException::class, MfaFactorNotFoundException::class)
+    @ExceptionHandler(UserNotFoundException::class)
     fun handleNotFound(ex: ServiceException): ResponseEntity<ErrorResponse> =
         response(HttpStatus.NOT_FOUND, ex)
 
-    @ExceptionHandler(UserAlreadyExistsException::class, MfaFactorAlreadyExistsException::class)
+    @ExceptionHandler(UserAlreadyExistsException::class)
     fun handleConflict(ex: ServiceException): ResponseEntity<ErrorResponse> =
         response(HttpStatus.CONFLICT, ex)
 
-    @ExceptionHandler(InvalidCredentialsException::class, InvalidVerificationTokenException::class, InvalidMfaCodeException::class)
+    @ExceptionHandler(InvalidCredentialsException::class, InvalidVerificationTokenException::class)
     fun handleBadRequest(ex: ServiceException): ResponseEntity<ErrorResponse> =
         response(HttpStatus.BAD_REQUEST, ex)
 

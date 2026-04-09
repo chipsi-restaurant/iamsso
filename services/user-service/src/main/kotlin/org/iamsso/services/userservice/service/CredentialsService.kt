@@ -49,7 +49,7 @@ class CredentialsService(
             user.failedAttempts = 0; user.lockedUntil = null
         }
 
-        return UserMapper.toCredentialsResponse(user, valid, valid && user.mfaEnabled)
+        return UserMapper.toCredentialsResponse(user, valid, mfaRequired = false)
     }
 
     @Transactional

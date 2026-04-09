@@ -7,7 +7,6 @@ import jakarta.persistence.EnumType
 import jakarta.persistence.Enumerated
 import jakarta.persistence.FetchType
 import jakarta.persistence.Id
-import jakarta.persistence.OneToMany
 import jakarta.persistence.OneToOne
 import jakarta.persistence.PreUpdate
 import jakarta.persistence.Table
@@ -31,11 +30,9 @@ class UserEntity(
     @Column(name = "created_at", nullable = false, updatable = false) val createdAt: Instant = Instant.now(),
     @Column(name = "updated_at", nullable = false) var updatedAt: Instant = Instant.now(),
     @OneToOne(mappedBy = "user", cascade = [CascadeType.ALL], fetch = FetchType.LAZY) var profile: UserProfileEntity? = null,
-    @OneToMany(mappedBy = "user", cascade = [CascadeType.ALL], orphanRemoval = true) val mfaFactors: MutableList<MfaFactorEntity> = mutableListOf(),
 ) {
     @PreUpdate
     fun onUpdate() { updatedAt = Instant.now() }
-    val mfaEnabled: Boolean get() = mfaFactors.any { it.status == MfaFactorStatus.ACTIVE }
 }
 
 enum class UserStatus { PENDING_VERIFICATION, ACTIVE, LOCKED, SUSPENDED, DELETED }

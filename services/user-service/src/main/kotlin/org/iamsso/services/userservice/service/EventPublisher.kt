@@ -6,9 +6,6 @@ import org.iamsso.contracts.events.CredentialsPasswordResetEvent
 import org.iamsso.contracts.events.CredentialsVerifyFailedEvent
 import org.iamsso.contracts.events.DomainEvent
 import org.iamsso.contracts.events.KafkaTopics
-import org.iamsso.contracts.events.MfaFactorEnrolledEvent
-import org.iamsso.contracts.events.MfaFactorRemovedEvent
-import org.iamsso.contracts.events.SendEmailOtpCommand
 import org.iamsso.contracts.events.SendEmailVerificationCommand
 import org.iamsso.contracts.events.UserCreatedEvent
 import org.iamsso.contracts.events.UserDeletedEvent
@@ -59,27 +56,11 @@ class EventPublisher(private val kafka: KafkaTemplate<String, Any>) {
         send(KafkaTopics.CREDENTIALS_EVENTS, userId, CredentialsPasswordResetEvent(userId, initiatedBy))
     }
 
-    fun mfaFactorEnrolled(userId: UUID, factorId: UUID, factorType: String) {
-        send(KafkaTopics.MFA_EVENTS, userId, MfaFactorEnrolledEvent(userId, factorId, factorType))
-    }
-
-    fun mfaFactorRemoved(userId: UUID, factorId: UUID, factorType: String) {
-        send(KafkaTopics.MFA_EVENTS, userId, MfaFactorRemovedEvent(userId, factorId, factorType))
-    }
-
     fun sendEmailVerification(userId: UUID, email: String, token: String, expiresAt: Instant) {
         kafka.send(
             KafkaTopics.NOTIFICATION_COMMANDS,
             userId.toString(),
             SendEmailVerificationCommand(userId, email, token, expiresAt)
-        )
-    }
-
-    fun sendEmailOtp(userId: UUID, email: String, code: String, expiresAt: Instant) {
-        kafka.send(
-            KafkaTopics.NOTIFICATION_COMMANDS,
-            userId.toString(),
-            SendEmailOtpCommand(userId, email, code, expiresAt)
         )
     }
 
