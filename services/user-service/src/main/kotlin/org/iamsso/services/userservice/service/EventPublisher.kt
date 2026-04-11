@@ -7,6 +7,7 @@ import org.iamsso.contracts.events.CredentialsVerifyFailedEvent
 import org.iamsso.contracts.events.DomainEvent
 import org.iamsso.contracts.events.KafkaTopics
 import org.iamsso.contracts.events.SendEmailVerificationCommand
+import org.iamsso.contracts.events.SendPasswordResetCommand
 import org.iamsso.contracts.events.UserCreatedEvent
 import org.iamsso.contracts.events.UserDeletedEvent
 import org.iamsso.contracts.events.UserProfileUpdatedEvent
@@ -61,6 +62,14 @@ class EventPublisher(private val kafka: KafkaTemplate<String, Any>) {
             KafkaTopics.NOTIFICATION_COMMANDS,
             userId.toString(),
             SendEmailVerificationCommand(userId, email, token, expiresAt)
+        )
+    }
+
+    fun sendPasswordReset(userId: UUID, email: String, firstName: String?, token: String, expiresAt: Instant) {
+        kafka.send(
+            KafkaTopics.NOTIFICATION_COMMANDS,
+            userId.toString(),
+            SendPasswordResetCommand(userId, email, firstName, token, expiresAt)
         )
     }
 
