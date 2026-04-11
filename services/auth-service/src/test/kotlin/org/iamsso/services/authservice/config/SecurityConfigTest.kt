@@ -38,8 +38,10 @@ class SecurityConfigTest {
     }
 
     @Test
-    fun `api v1 endpoint requires authentication`() {
-        mockMvc.get("/api/v1/clients")
-            .andExpect { status { isUnauthorized() } }
+    fun `api v1 endpoint is permitted (authorization handled by gateway)`() {
+        // /api/v1/** is permitAll in the auth-service security config —
+        // authorization for these endpoints is handled by API Gateway + Policy Service.
+        val result = mockMvc.get("/api/v1/clients").andReturn()
+        assert(result.response.status != 401 && result.response.status != 403)
     }
 }

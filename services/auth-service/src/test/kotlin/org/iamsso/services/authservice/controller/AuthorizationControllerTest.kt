@@ -5,7 +5,9 @@ import org.iamsso.services.authservice.repository.AuthorizationCodeStore
 import org.iamsso.services.authservice.repository.OAuthClientRepository
 import org.iamsso.services.authservice.service.AuthEventPublisher
 import org.iamsso.services.authservice.service.AuthRequestService
-import org.iamsso.services.authservice.service.SsoSessionService
+import org.iamsso.services.authservice.service.MfaChallengeService
+import org.iamsso.services.authservice.service.MfaServiceClient
+import org.iamsso.services.authservice.service.SessionServiceClient
 import org.iamsso.services.authservice.service.UserServiceClient
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -23,10 +25,12 @@ class AuthorizationControllerTest {
 
     @Mock lateinit var clientRepository: OAuthClientRepository
     @Mock lateinit var authRequestService: AuthRequestService
-    @Mock lateinit var ssoSessionService: SsoSessionService
+    @Mock lateinit var sessionServiceClient: SessionServiceClient
     @Mock lateinit var authCodeStore: AuthorizationCodeStore
     @Mock lateinit var userServiceClient: UserServiceClient
     @Mock lateinit var authEventPublisher: AuthEventPublisher
+    @Mock lateinit var mfaChallengeService: MfaChallengeService
+    @Mock lateinit var mfaServiceClient: MfaServiceClient
 
     private lateinit var mockMvc: MockMvc
 
@@ -35,10 +39,12 @@ class AuthorizationControllerTest {
         val controller = AuthorizationController(
             clientRepository = clientRepository,
             authRequestService = authRequestService,
-            ssoSessionService = ssoSessionService,
+            sessionServiceClient = sessionServiceClient,
             authCodeStore = authCodeStore,
             userServiceClient = userServiceClient,
             authEventPublisher = authEventPublisher,
+            mfaChallengeService = mfaChallengeService,
+            mfaServiceClient = mfaServiceClient,
             props = AppProperties(),
         )
         mockMvc = MockMvcBuilders.standaloneSetup(controller).build()

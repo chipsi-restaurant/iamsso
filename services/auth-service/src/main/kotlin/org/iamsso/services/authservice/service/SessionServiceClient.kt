@@ -57,6 +57,15 @@ class SessionServiceClient(props: AppProperties) {
         } catch (_: RestClientResponseException) {}
     }
 
+    fun deleteAllForUser(userId: UUID) {
+        try {
+            restClient.delete()
+                .uri("/api/v1/sessions/user/$userId")
+                .retrieve()
+                .toBodilessEntity()
+        } catch (_: RestClientResponseException) {}
+    }
+
     private fun <T> runCatchingRest(block: () -> T): T? =
         try { block() } catch (_: RestClientResponseException) { null }
 }

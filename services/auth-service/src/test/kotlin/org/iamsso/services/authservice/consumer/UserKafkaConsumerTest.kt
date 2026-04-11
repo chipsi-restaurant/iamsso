@@ -5,7 +5,7 @@ import org.iamsso.contracts.events.DomainEvent
 import org.iamsso.contracts.events.UserDeletedEvent
 import org.iamsso.contracts.events.UserStatusChangedEvent
 import org.iamsso.services.authservice.repository.RefreshTokenRepository
-import org.iamsso.services.authservice.service.SsoSessionService
+import org.iamsso.services.authservice.service.SessionServiceClient
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mock
@@ -18,13 +18,13 @@ import java.util.UUID
 class UserKafkaConsumerTest {
 
     @Mock lateinit var refreshTokenRepository: RefreshTokenRepository
-    @Mock lateinit var ssoSessionService: SsoSessionService
+    @Mock lateinit var sessionServiceClient: SessionServiceClient
     private lateinit var consumer: UserKafkaConsumer
 
     @BeforeEach
     fun setUp() {
         MockitoAnnotations.openMocks(this)
-        consumer = UserKafkaConsumer(refreshTokenRepository, ssoSessionService)
+        consumer = UserKafkaConsumer(refreshTokenRepository, sessionServiceClient)
     }
 
     @Test
@@ -38,7 +38,7 @@ class UserKafkaConsumerTest {
         @Suppress("UNCHECKED_CAST")
         consumer.onUserEvent(event as CloudEventEnvelope<DomainEvent>)
         verify(refreshTokenRepository).revokeAllByUserId(userId)
-        verify(ssoSessionService).deleteAllForUser(userId)
+        verify(sessionServiceClient).deleteAllForUser(userId)
     }
 
     @Test
@@ -58,7 +58,7 @@ class UserKafkaConsumerTest {
         @Suppress("UNCHECKED_CAST")
         consumer.onUserEvent(event as CloudEventEnvelope<DomainEvent>)
         verifyNoInteractions(refreshTokenRepository)
-        verifyNoInteractions(ssoSessionService)
+        verifyNoInteractions(sessionServiceClient)
     }
 
     @Test
@@ -78,6 +78,6 @@ class UserKafkaConsumerTest {
         @Suppress("UNCHECKED_CAST")
         consumer.onUserEvent(event as CloudEventEnvelope<DomainEvent>)
         verify(refreshTokenRepository).revokeAllByUserId(userId)
-        verify(ssoSessionService).deleteAllForUser(userId)
+        verify(sessionServiceClient).deleteAllForUser(userId)
     }
 }
