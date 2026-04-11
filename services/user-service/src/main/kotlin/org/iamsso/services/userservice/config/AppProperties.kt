@@ -6,6 +6,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 data class AppProperties(
     val credentials: CredentialsProps = CredentialsProps(),
     val emailVerification: EmailVerificationProps = EmailVerificationProps(),
+    val sessionService: SessionServiceProps = SessionServiceProps(),
 ) {
     data class CredentialsProps(
         val maxFailedAttempts: Int = 5,
@@ -14,5 +15,8 @@ data class AppProperties(
     data class EmailVerificationProps(
         val tokenTtlHours: Long = 24,
         val resendCooldownSeconds: Long = 60,
+    )
+    data class SessionServiceProps(
+        val baseUrl: String = "http://localhost:8086",
     )
 }

@@ -44,3 +44,5 @@ app:
   email-verification:
     token-ttl-hours: 24
     resend-cooldown-seconds: 60
+  session-service:
+    base-url: ${SESSION_SERVICE_URL:http://localhost:8086}
