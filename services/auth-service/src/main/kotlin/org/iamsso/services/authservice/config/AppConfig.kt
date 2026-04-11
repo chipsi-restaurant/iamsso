@@ -16,6 +16,7 @@ data class AppProperties(
     val authorizationRequest: AuthorizationRequestProps = AuthorizationRequestProps(),
     val mfaChallenge: MfaChallengeProps = MfaChallengeProps(),
     val mfaService: MfaServiceProps = MfaServiceProps(),
+    val sessionService: SessionServiceProps = SessionServiceProps(),
 ) {
     data class JwtProps(
         val accessTokenTtlSeconds: Long = 3600,
@@ -37,4 +38,5 @@ data class AppProperties(
     data class AuthorizationRequestProps(val ttlSeconds: Long = 300)
     data class MfaChallengeProps(val ttlSeconds: Long = 300)
     data class MfaServiceProps(val baseUrl: String = "http://localhost:8083")
+    data class SessionServiceProps(val baseUrl: String = "http://localhost:8086")
 }

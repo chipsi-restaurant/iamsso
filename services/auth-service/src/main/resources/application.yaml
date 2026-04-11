@@ -76,3 +76,5 @@ app:
     ttl-seconds: 300
   mfa-service:
     base-url: http://localhost:8083
+  session-service:
+    base-url: http://localhost:8086
