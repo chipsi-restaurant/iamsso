@@ -18,9 +18,17 @@ class GlobalExceptionHandler {
     fun handleConflict(ex: ServiceException): ResponseEntity<ErrorResponse> =
         response(HttpStatus.CONFLICT, ex)
 
-    @ExceptionHandler(InvalidCredentialsException::class, InvalidVerificationTokenException::class)
+    @ExceptionHandler(
+        InvalidCredentialsException::class,
+        InvalidVerificationTokenException::class,
+        InvalidPasswordException::class,
+    )
     fun handleBadRequest(ex: ServiceException): ResponseEntity<ErrorResponse> =
         response(HttpStatus.BAD_REQUEST, ex)
+
+    @ExceptionHandler(PasswordResetTokenInvalidException::class)
+    fun handleGone(ex: ServiceException): ResponseEntity<ErrorResponse> =
+        response(HttpStatus.GONE, ex)
 
     @ExceptionHandler(AccountLockedException::class)
     fun handleLocked(ex: ServiceException): ResponseEntity<ErrorResponse> =
