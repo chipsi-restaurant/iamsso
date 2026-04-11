@@ -1,6 +1,6 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '@/lib/auth-context'
-import { LayoutDashboard, Users, Shield, Key, Monitor, ShieldCheck, LogOut } from 'lucide-react'
+import { LayoutDashboard, Users, Shield, Key, Monitor, ShieldCheck, FileSearch, LogOut } from 'lucide-react'
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Панель' },
@@ -9,6 +9,7 @@ const navItems = [
   { to: '/clients', icon: Key, label: 'Клиенты' },
   { to: '/sessions', icon: Monitor, label: 'Сессии' },
   { to: '/mfa', icon: ShieldCheck, label: 'MFA' },
+  { to: '/audit', icon: FileSearch, label: 'Аудит' },
 ]
 
 export default function SidebarLayout() {

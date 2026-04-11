@@ -12,6 +12,7 @@ import PoliciesPage from '@/pages/policies'
 import ClientsPage from '@/pages/clients'
 import SessionsPage from '@/pages/sessions'
 import MfaPage from '@/pages/mfa'
+import AuditPage from '@/pages/audit'
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
@@ -33,6 +34,7 @@ export default function App() {
               <Route path="/clients" element={<ClientsPage />} />
               <Route path="/sessions" element={<SessionsPage />} />
               <Route path="/mfa" element={<MfaPage />} />
+              <Route path="/audit" element={<AuditPage />} />
             </Route>
           </Routes>
         </BrowserRouter>
