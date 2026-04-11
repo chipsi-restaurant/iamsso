@@ -35,5 +35,6 @@ class RoutesConfig {
         .route("health-mfa") { it.path("/health/mfa").filters { f -> f.rewritePath("/health/mfa", "/actuator/health") }.uri("http://localhost:8083") }
         .route("health-notification") { it.path("/health/notification").filters { f -> f.rewritePath("/health/notification", "/actuator/health") }.uri("http://localhost:8084") }
         .route("health-audit") { it.path("/health/audit").filters { f -> f.rewritePath("/health/audit", "/actuator/health") }.uri("http://localhost:8085") }
+        .route("health-session") { it.path("/health/session").filters { f -> f.rewritePath("/health/session", "/actuator/health") }.uri("http://localhost:8086") }
         .build()
 }
