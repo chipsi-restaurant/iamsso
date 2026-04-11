@@ -1,0 +1,49 @@
+databaseChangeLog:
+  - changeSet:
+      id: 001-create-schema
+      author: Arseniy Kolyshkin
+      changes:
+        - sql:
+            sql: CREATE SCHEMA IF NOT EXISTS iamsso_audit
+
+  - changeSet:
+      id: 001-create-audit-events
+      author: Arseniy Kolyshkin
+      changes:
+        - createTable:
+            schemaName: iamsso_audit
+            tableName: audit_events
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true } }
+              - column: { name: event_type, type: varchar(100), constraints: { nullable: false } }
+              - column: { name: event_source, type: varchar(50), constraints: { nullable: false } }
+              - column: { name: user_id, type: uuid }
+              - column: { name: client_id, type: varchar(100) }
+              - column: { name: session_id, type: varchar(100) }
+              - column: { name: ip_address, type: varchar(50) }
+              - column: { name: details, type: jsonb }
+              - column: { name: timestamp, type: timestamptz, constraints: { nullable: false } }
+        - createIndex:
+            schemaName: iamsso_audit
+            tableName: audit_events
+            indexName: idx_audit_user_id
+            columns:
+              - column: { name: user_id }
+        - createIndex:
+            schemaName: iamsso_audit
+            tableName: audit_events
+            indexName: idx_audit_event_type
+            columns:
+              - column: { name: event_type }
+        - createIndex:
+            schemaName: iamsso_audit
+            tableName: audit_events
+            indexName: idx_audit_event_source
+            columns:
+              - column: { name: event_source }
+        - createIndex:
+            schemaName: iamsso_audit
+            tableName: audit_events
+            indexName: idx_audit_timestamp
+            columns:
+              - column: { name: timestamp }
