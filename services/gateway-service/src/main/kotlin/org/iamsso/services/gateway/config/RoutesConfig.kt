@@ -21,6 +21,8 @@ class RoutesConfig {
         .route("user-service") { it.path("/api/v1/users/**").uri("http://localhost:8081") }
         // Protected — auth admin
         .route("auth-clients") { it.path("/api/v1/clients/**").uri("http://localhost:8080") }
+        // Specific logout — must come BEFORE session-service wildcard (first-match)
+        .route("auth-logout") { it.path("/api/v1/sessions/logout").uri("http://localhost:8080") }
         .route("session-service") { it.path("/api/v1/sessions/**").uri("http://localhost:8086") }
         // Protected — policy service
         .route("policy-policies") { it.path("/api/v1/policies/**").uri("http://localhost:8082") }

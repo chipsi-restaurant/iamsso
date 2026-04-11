@@ -57,6 +57,15 @@ class SessionServiceClient(props: AppProperties) {
         } catch (_: RestClientResponseException) {}
     }
 
+    fun delete(sessionId: String) {
+        try {
+            restClient.delete()
+                .uri("/api/v1/sessions/$sessionId")
+                .retrieve()
+                .toBodilessEntity()
+        } catch (_: RestClientResponseException) {}
+    }
+
     fun deleteAllForUser(userId: UUID) {
         try {
             restClient.delete()
