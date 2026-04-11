@@ -21,7 +21,7 @@ class MfaChallengeController(
     private val mfaChallengeService: MfaChallengeService,
     private val mfaServiceClient: MfaServiceClient,
     private val userServiceClient: UserServiceClient,
-    private val ssoSessionService: SsoSessionService,
+    private val sessionServiceClient: SessionServiceClient,
     private val authCodeStore: AuthorizationCodeStore,
     private val authEventPublisher: AuthEventPublisher,
     private val props: AppProperties,
@@ -63,7 +63,8 @@ class MfaChallengeController(
 
         // MFA passed — create session and auth code
         val authRequest = challenge.authRequest
-        val session = ssoSessionService.create(challenge.userId, authRequest.clientId)
+        val session = sessionServiceClient.create(challenge.userId, authRequest.clientId)
+            ?: return RedirectView("/login?error=session_creation_failed")
         response.addCookie(Cookie("SSO_SESSION", session.sessionId).apply {
             isHttpOnly = true
             path = "/"
@@ -84,7 +85,6 @@ class MfaChallengeController(
         ))
 
         authEventPublisher.publishLoginSuccess(challenge.userId, authRequest.clientId, session.sessionId)
-        authEventPublisher.publishSessionCreated(session.sessionId, challenge.userId, authRequest.clientId)
 
         val location = buildString {
             append("${authRequest.redirectUri}?code=$code")
