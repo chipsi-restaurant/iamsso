@@ -15,8 +15,11 @@ class AuditEventMapper(private val objectMapper: ObjectMapper) {
         val node = objectMapper.readTree(json)
         val type = node.get("type")?.asText() ?: node.get("eventType")?.asText() ?: return null
         val source = node.get("source")?.asText() ?: "unknown"
-        val timeStr = node.get("time")?.asText()
-        val timestamp = if (timeStr != null) Instant.parse(timeStr) else Instant.now()
+        val timeNode = node.get("time")
+        val timestamp = parseInstant(timeNode) ?: run {
+            val data = node.get("data")
+            parseInstant(data?.get("timestamp")) ?: Instant.now()
+        }
         val data: JsonNode = node.get("data") ?: node
 
         val userId = data.get("userId")?.asText()?.let { runCatching { UUID.fromString(it) }.getOrNull() }
@@ -41,6 +44,20 @@ class AuditEventMapper(private val objectMapper: ObjectMapper) {
         )
     } catch (_: Exception) {
         null
+    }
+
+    private fun parseInstant(node: JsonNode?): Instant? {
+        if (node == null || node.isNull) return null
+        return runCatching {
+            when {
+                node.isTextual -> Instant.parse(node.asText())
+                node.isNumber -> {
+                    val seconds = node.asDouble()
+                    Instant.ofEpochSecond(seconds.toLong(), ((seconds - seconds.toLong()) * 1_000_000_000).toLong())
+                }
+                else -> null
+            }
+        }.getOrNull()
     }
 
     fun toResponse(e: AuditEventEntity) = AuditEventResponse(
