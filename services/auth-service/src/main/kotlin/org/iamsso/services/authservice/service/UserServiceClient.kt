@@ -1,5 +1,6 @@
 package org.iamsso.services.authservice.service
 
+import org.iamsso.contracts.user.api.CredentialsApi
 import org.iamsso.contracts.user.api.InternalApi
 import org.iamsso.contracts.user.api.ProfileApi
 import org.iamsso.contracts.user.api.UsersApi
@@ -50,6 +51,7 @@ class UserServiceClient(
     private val internalApi = InternalApi(appProperties.userService.baseUrl)
     private val profileApi = ProfileApi(appProperties.userService.baseUrl)
     private val usersApi = UsersApi(appProperties.userService.baseUrl)
+    private val credentialsApi = CredentialsApi(appProperties.userService.baseUrl)
 
     fun getByEmail(email: String): UserData? =
         runCatchingRest { internalApi.getUserByEmail(email).toUserData() }
@@ -70,6 +72,45 @@ class UserServiceClient(
 
     fun getProfile(userId: UUID): UserProfile? =
         runCatchingRest { profileApi.getUserProfile(userId).toUserProfile() }
+
+    fun requestPasswordReset(email: String) {
+        runCatchingRest {
+            credentialsApi.requestPasswordReset(
+                passwordResetRequestRequest = org.iamsso.contracts.user.model.PasswordResetRequestRequest(email = email)
+            )
+        }
+    }
+
+    /** Returns true if token is valid, false if expired/not-found/already-used. */
+    fun validatePasswordResetToken(token: String): Boolean =
+        try {
+            credentialsApi.validatePasswordResetToken(token = token)
+            true
+        } catch (_: RestClientResponseException) {
+            false
+        }
+
+    /**
+     * Returns null on success; otherwise returns the error code from user-service
+     * ("TOKEN_INVALID" | "INVALID_PASSWORD").
+     */
+    fun confirmPasswordReset(token: String, newPassword: String): String? =
+        try {
+            credentialsApi.confirmPasswordReset(
+                passwordResetConfirmRequest = org.iamsso.contracts.user.model.PasswordResetConfirmRequest(
+                    token = token,
+                    newPassword = newPassword
+                )
+            )
+            null
+        } catch (e: RestClientResponseException) {
+            try {
+                val node = com.fasterxml.jackson.databind.ObjectMapper().readTree(e.responseBodyAsString)
+                node.get("code")?.asText() ?: "UNKNOWN_ERROR"
+            } catch (_: Exception) {
+                "UNKNOWN_ERROR"
+            }
+        }
 
     private fun <T> runCatchingRest(block: () -> T): T? =
         try {
