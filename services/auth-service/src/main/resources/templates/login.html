@@ -70,6 +70,10 @@
             text-align: left;
         }
 
+        .success { background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.25); color: #059669; padding: 8px 12px; border-radius: 4px; font-size: 13px; font-weight: 400; margin-bottom: 16px; text-align: left; }
+        .forgot-link { display: inline-block; margin-top: 12px; font-size: 13px; color: #533afd; text-decoration: none; }
+        .forgot-link:hover { text-decoration: underline; }
+
         .field { margin-bottom: 16px; text-align: left; }
 
         label {
@@ -137,6 +141,8 @@
         <div class="error" th:if="${error == 'account_disabled'}">Этот аккаунт отключён.</div>
         <div class="error" th:if="${error == 'account_locked'}">Этот аккаунт временно заблокирован.</div>
 
+        <div class="success" th:if="${message == 'password_reset_success'}">Пароль обновлён. Войдите с новым паролем.</div>
+
         <form method="post" th:action="@{/oauth2/authorize/callback}">
             <input type="hidden" name="auth_request_id" th:value="${authRequestId}"/>
 
@@ -152,6 +158,8 @@
 
             <button type="submit">Войти</button>
         </form>
+
+            <a href="/forgot-password" class="forgot-link">Забыли пароль?</a>
     </div>
 
     <p class="footer">Защищено OAuth 2.0 + PKCE</p>

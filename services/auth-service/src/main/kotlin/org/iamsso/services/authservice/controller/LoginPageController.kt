@@ -12,10 +12,12 @@ class LoginPageController {
     fun loginPage(
         @RequestParam("auth_request_id") authRequestId: String,
         @RequestParam("error", required = false) error: String?,
+        @RequestParam("message", required = false) message: String?,
         model: Model,
     ): String {
         model.addAttribute("authRequestId", authRequestId)
         model.addAttribute("error", error)
+        model.addAttribute("message", message)
         return "login"
     }
 }
