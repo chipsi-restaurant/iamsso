@@ -35,6 +35,16 @@ data class SendPasswordChangedNotificationCommand(
     val timestamp: Instant = Instant.now(),
 )
 
+/** Команда: отправить письмо со ссылкой для сброса пароля */
+data class SendPasswordResetCommand(
+    val userId: UUID,
+    val email: String,
+    val firstName: String?,
+    val token: String,
+    val expiresAt: Instant,
+    val timestamp: Instant = Instant.now(),
+)
+
 /** Команда: отправить предупреждение о подозрительной активности */
 data class SendSecurityAlertCommand(
     val userId: UUID,
