@@ -26,6 +26,8 @@ class RoutesConfig {
         .route("policy-evaluate") { it.path("/api/v1/policy/**").uri("http://localhost:8082") }
         // Protected — MFA service
         .route("mfa-service") { it.path("/api/v1/mfa/**").uri("http://localhost:8083") }
+        // Protected — audit service
+        .route("audit-service") { it.path("/api/v1/audit/**").uri("http://localhost:8085") }
         // Health — proxied actuator endpoints
         .route("health-auth") { it.path("/health/auth").filters { f -> f.rewritePath("/health/auth", "/actuator/health") }.uri("http://localhost:8080") }
         .route("health-user") { it.path("/health/user").filters { f -> f.rewritePath("/health/user", "/actuator/health") }.uri("http://localhost:8081") }
