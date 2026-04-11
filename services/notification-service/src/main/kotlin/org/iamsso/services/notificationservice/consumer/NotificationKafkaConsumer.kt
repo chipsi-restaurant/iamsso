@@ -6,6 +6,7 @@ import org.iamsso.contracts.events.KafkaTopics
 import org.iamsso.contracts.events.SendEmailOtpCommand
 import org.iamsso.contracts.events.SendEmailVerificationCommand
 import org.iamsso.contracts.events.SendPasswordChangedNotificationCommand
+import org.iamsso.contracts.events.SendPasswordResetCommand
 import org.iamsso.contracts.events.SendSecurityAlertCommand
 import org.iamsso.services.notificationservice.service.EmailService
 import org.slf4j.LoggerFactory
@@ -31,6 +32,10 @@ class NotificationKafkaConsumer(
             val data = if (isEnvelope) node.get("data") else node
 
             when {
+                envelopeType == "notification.send-password-reset" || matchesPasswordReset(data) -> {
+                    val cmd = objectMapper.treeToValue(data, SendPasswordResetCommand::class.java)
+                    emailService.sendPasswordReset(cmd.userId, cmd.email, cmd.firstName, cmd.token, cmd.expiresAt)
+                }
                 envelopeType == "notification.send-email-verification" || matchesVerification(data) -> {
                     val cmd = objectMapper.treeToValue(data, SendEmailVerificationCommand::class.java)
                     emailService.sendEmailVerification(cmd.userId, cmd.email, cmd.token, cmd.expiresAt)
@@ -57,6 +62,16 @@ class NotificationKafkaConsumer(
     /** SendEmailVerificationCommand has "token" and "expiresAt" fields */
     private fun matchesVerification(node: JsonNode): Boolean =
         node.has("token") && node.has("expiresAt") && node.has("email")
+
+    /**
+     * SendPasswordResetCommand is distinguished by the "firstName" field, which is unique
+     * to this command across all notification commands. Jackson (Spring Kafka JsonSerializer
+     * uses default Include.ALWAYS) emits `"firstName": null` even when the value is null,
+     * so `node.has("firstName")` reliably returns true for this command. Checked BEFORE
+     * matchesVerification because both commands contain token + expiresAt + email.
+     */
+    private fun matchesPasswordReset(node: JsonNode): Boolean =
+        node.has("firstName") && node.has("token") && node.has("expiresAt") && node.has("email")
 
     /** SendEmailOtpCommand has "code" and "expiresAt" fields */
     private fun matchesOtp(node: JsonNode): Boolean =
