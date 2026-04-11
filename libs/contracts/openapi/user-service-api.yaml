@@ -364,6 +364,90 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
+  # ── Self-service сброс пароля (публичные эндпоинты) ─
+  /api/v1/users/password-reset/request:
+    post:
+      operationId: requestPasswordReset
+      tags: [Credentials]
+      summary: Запрос сброса пароля по email
+      description: |
+        Публичный эндпоинт. Всегда возвращает 204, независимо от того,
+        существует пользователь с таким email или нет (anti-enumeration).
+        Если пользователь существует — удаляет все его предыдущие токены сброса,
+        генерирует новый UUID-токен с TTL 15 минут и публикует Kafka-команду
+        `notification.send-password-reset` для Notification Service.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequestRequest'
+      responses:
+        '204':
+          description: Запрос принят (всегда, независимо от существования юзера)
+
+  /api/v1/users/password-reset/validate:
+    get:
+      operationId: validatePasswordResetToken
+      tags: [Credentials]
+      summary: Проверить, что токен сброса валиден
+      description: |
+        Используется auth-service для показа формы сброса:
+        если токен невалиден — показывается сообщение об ошибке,
+        если валиден — рендерится форма нового пароля.
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Токен валиден
+        '410':
+          description: Токен не найден, истёк или уже использован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/users/password-reset/confirm:
+    post:
+      operationId: confirmPasswordReset
+      tags: [Credentials]
+      summary: Установить новый пароль по токену
+      description: |
+        Валидирует токен, проверяет политику пароля, обновляет пароль,
+        удаляет токен (single-use), инвалидирует все активные сессии пользователя
+        через session-service. Публикует событие `credentials.password-reset`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirmRequest'
+      responses:
+        '204':
+          description: Пароль обновлён
+        '400':
+          description: Пароль не соответствует политике
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                code: "INVALID_PASSWORD"
+                message: "Пароль должен содержать минимум 8 символов, хотя бы одну букву и одну цифру"
+        '410':
+          description: Токен не найден, истёк или уже использован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                code: "TOKEN_INVALID"
+                message: "Ссылка для сброса пароля недействительна или истекла"
+
   /api/v1/users/{userId}/credentials/password/reset:
     parameters:
       - $ref: '#/components/parameters/UserIdParam'
@@ -884,6 +968,31 @@ components:
           minLength: 8
           maxLength: 128
           description: Новый пароль
+
+    PasswordResetRequestRequest:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+          description: Email пользователя, для которого запрашивается сброс
+          example: "ivan@example.com"
+
+    PasswordResetConfirmRequest:
+      type: object
+      required: [token, newPassword]
+      properties:
+        token:
+          type: string
+          description: Одноразовый токен из письма
+          example: "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+        newPassword:
+          type: string
+          format: password
+          minLength: 8
+          description: Новый пароль (мин. 8 символов, хотя бы одна буква и одна цифра)
+          example: "NewSecureP@ss456"
 
     EnrollMfaRequest:
       type: object
