@@ -14,6 +14,8 @@ class RoutesConfig {
         .route("auth-oauth2") { it.path("/oauth2/**").uri("http://localhost:8080") }
         .route("auth-wellknown") { it.path("/.well-known/**").uri("http://localhost:8080") }
         .route("auth-login") { it.path("/login").uri("http://localhost:8080") }
+        .route("auth-forgot-password") { it.path("/forgot-password").uri("http://localhost:8080") }
+        .route("auth-reset-password") { it.path("/reset-password").uri("http://localhost:8080") }
         .route("auth-userinfo") { it.path("/userinfo").uri("http://localhost:8080") }
         // Protected — user service
         .route("user-service") { it.path("/api/v1/users/**").uri("http://localhost:8081") }
