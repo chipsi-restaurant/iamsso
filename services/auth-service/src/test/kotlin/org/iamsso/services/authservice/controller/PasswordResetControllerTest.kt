@@ -71,7 +71,7 @@ class PasswordResetControllerTest {
     }
 
     @Test
-    fun `POST reset-password happy path redirects with success message`() {
+    fun `POST reset-password happy path renders success view`() {
         whenever(userServiceClient.confirmPasswordReset("tok", "NewSecureP@ss1")).thenReturn(null)
 
         mockMvc.perform(
@@ -80,8 +80,9 @@ class PasswordResetControllerTest {
                 .param("newPassword", "NewSecureP@ss1")
                 .param("confirmPassword", "NewSecureP@ss1")
         )
-            .andExpect(status().is3xxRedirection)
-            .andExpect(redirectedUrl("/login?message=password_reset_success"))
+            .andExpect(status().isOk)
+            .andExpect(view().name("reset-password"))
+            .andExpect(model().attribute("success", true))
     }
 
     @Test

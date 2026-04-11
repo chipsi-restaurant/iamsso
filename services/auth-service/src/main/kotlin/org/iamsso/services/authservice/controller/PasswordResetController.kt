@@ -60,7 +60,10 @@ class PasswordResetController(
 
         val errorCode = userServiceClient.confirmPasswordReset(token, newPassword)
         return when (errorCode) {
-            null -> RedirectView("/login?message=password_reset_success")
+            null -> {
+                model.addAttribute("success", true)
+                "reset-password"
+            }
             "INVALID_PASSWORD" -> {
                 model.addAttribute("token", token)
                 model.addAttribute("error", "weak_password")
