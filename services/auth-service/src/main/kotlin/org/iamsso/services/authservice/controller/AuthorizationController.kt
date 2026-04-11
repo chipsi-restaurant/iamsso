@@ -10,7 +10,7 @@ import org.iamsso.services.authservice.service.AuthRequestService
 import org.iamsso.services.authservice.service.MfaChallenge
 import org.iamsso.services.authservice.service.MfaChallengeService
 import org.iamsso.services.authservice.service.MfaServiceClient
-import org.iamsso.services.authservice.service.SsoSessionService
+import org.iamsso.services.authservice.service.SessionServiceClient
 import org.iamsso.services.authservice.service.UserServiceClient
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.GetMapping
@@ -28,7 +28,7 @@ import jakarta.servlet.http.HttpServletResponse
 class AuthorizationController(
     private val clientRepository: OAuthClientRepository,
     private val authRequestService: AuthRequestService,
-    private val ssoSessionService: SsoSessionService,
+    private val sessionServiceClient: SessionServiceClient,
     private val authCodeStore: AuthorizationCodeStore,
     private val userServiceClient: UserServiceClient,
     private val authEventPublisher: AuthEventPublisher,
@@ -66,10 +66,10 @@ class AuthorizationController(
 
         val sessionId = request.cookies?.find { it.name == "SSO_SESSION" }?.value
         if (sessionId != null) {
-            val session = ssoSessionService.get(sessionId)
+            val session = sessionServiceClient.get(sessionId)
             if (session != null) {
-                ssoSessionService.updateActivity(sessionId)
-                ssoSessionService.addClient(sessionId, clientId)
+                sessionServiceClient.updateActivity(sessionId)
+                sessionServiceClient.addClient(sessionId, clientId)
                 val code = UUID.randomUUID().toString()
                 authCodeStore.save(
                     AuthorizationCodeData(
@@ -156,7 +156,8 @@ class AuthorizationController(
             return RedirectView("/mfa-challenge?challenge_id=${challenge.challengeId}")
         }
 
-        val session = ssoSessionService.create(user.id, authRequest.clientId)
+        val session = sessionServiceClient.create(user.id, authRequest.clientId)
+            ?: return errorNoRedirect(response, "session_creation_failed")
         val cookie = Cookie("SSO_SESSION", session.sessionId).apply {
             isHttpOnly = true
             path = "/"
@@ -180,7 +181,6 @@ class AuthorizationController(
         )
 
         authEventPublisher.publishLoginSuccess(user.id, authRequest.clientId, session.sessionId)
-        authEventPublisher.publishSessionCreated(session.sessionId, user.id, authRequest.clientId)
 
         val location = buildString {
             append("${authRequest.redirectUri}?code=$code")
