@@ -39,6 +39,15 @@ class EmailService(
         send(email, "Пароль изменён — IAMSSO", "email/password-changed", Context())
     }
 
+    fun sendPasswordReset(userId: UUID, email: String, firstName: String?, token: String, expiresAt: Instant) {
+        val ctx = Context().apply {
+            setVariable("firstName", firstName)
+            setVariable("resetUrl", "${props.baseUrl}/reset-password?token=$token")
+            setVariable("expiresAt", expiresAt.toString())
+        }
+        send(email, "Сброс пароля — IAMSSO", "email/password-reset", ctx)
+    }
+
     fun sendSecurityAlert(userId: UUID, email: String, alertType: String, details: Map<String, String>) {
         val ctx = Context().apply {
             setVariable("alertType", alertType)
