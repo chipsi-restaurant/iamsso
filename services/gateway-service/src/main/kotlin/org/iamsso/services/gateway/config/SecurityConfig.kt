@@ -19,13 +19,33 @@ class SecurityConfig {
 
     @Bean
     fun corsConfigurationSource(): CorsConfigurationSource {
-        val config = CorsConfiguration()
-        config.allowedOrigins = listOf("http://localhost:3000", "http://localhost:8090", "null")
-        config.allowedMethods = listOf("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
-        config.allowedHeaders = listOf("Authorization", "Content-Type", "Accept")
-        config.allowCredentials = true
+        // Strict CORS for API endpoints (frontend AJAX)
+        val apiConfig = CorsConfiguration().apply {
+            allowedOrigins = listOf("http://localhost:3000", "http://localhost:8090")
+            allowedMethods = listOf("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
+            allowedHeaders = listOf("Authorization", "Content-Type", "Accept")
+            allowCredentials = true
+        }
+
+        // Permissive CORS for public server-rendered pages (login, password reset, MFA)
+        // These are HTML form submissions — CORS не нужен для защиты,
+        // безопасность обеспечивается backend-логикой (токены, anti-enumeration)
+        val publicConfig = CorsConfiguration().apply {
+            allowedOriginPatterns = listOf("*")
+            allowedMethods = listOf("GET", "POST", "OPTIONS")
+            allowCredentials = true
+        }
+
         val source = UrlBasedCorsConfigurationSource()
-        source.registerCorsConfiguration("/**", config)
+        // Public form paths — permissive (specific first)
+        source.registerCorsConfiguration("/login", publicConfig)
+        source.registerCorsConfiguration("/forgot-password", publicConfig)
+        source.registerCorsConfiguration("/reset-password", publicConfig)
+        source.registerCorsConfiguration("/mfa-challenge", publicConfig)
+        source.registerCorsConfiguration("/mfa-challenge/**", publicConfig)
+        source.registerCorsConfiguration("/oauth2/**", publicConfig)
+        // Everything else — strict
+        source.registerCorsConfiguration("/**", apiConfig)
         return source
     }
 
