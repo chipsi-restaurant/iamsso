@@ -4,6 +4,10 @@ server:
 spring:
   application:
     name: gateway-service
+  cloud:
+    gateway:
+      default-filters:
+        - PreserveHostHeader
   security:
     oauth2:
       resourceserver:
