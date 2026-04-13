@@ -5,3 +5,5 @@ databaseChangeLog:
       file: classpath:db/changelog/changelogs/002-add-family-id.yaml
   - include:
       file: classpath:db/changelog/changelogs/003-seed-demo-client.yaml
+  - include:
+      file: classpath:db/changelog/changelogs/004-update-demo-client-redirect-uris.yaml

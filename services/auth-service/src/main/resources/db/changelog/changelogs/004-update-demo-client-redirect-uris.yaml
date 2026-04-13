@@ -1,0 +1,13 @@
+databaseChangeLog:
+  - changeSet:
+      id: 004-update-demo-client-redirect-uris
+      author: Arseniy Kolyshkin
+      changes:
+        - update:
+            schemaName: iamsso_auth
+            tableName: oauth_clients
+            columns:
+              - column:
+                  name: redirect_uris
+                  value: "http://localhost:3000/callback,https://kolyshkin.space/callback"
+            where: client_id = 'demo-app'
