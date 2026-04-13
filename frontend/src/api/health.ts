@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import axios from 'axios'
 
-const GATEWAY_URL = 'http://localhost:8090'
+const GATEWAY_URL = import.meta.env.VITE_GATEWAY_URL || 'http://localhost:8090'
 
 interface ServiceHealth { name: string; port: number; status: 'up' | 'down' }
 

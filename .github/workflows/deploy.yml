@@ -38,7 +38,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build & push images
+      - name: Build & push backend images
         run: |
           TAG="${{ github.sha }}"
           SERVICES="auth-service user-service session-service mfa-service gateway-service policy-service audit-service notification-service"
@@ -50,6 +50,19 @@ jobs:
             docker push $IMAGE_PREFIX/$SVC:latest
             echo "::endgroup::"
           done
+
+      - name: Build & push frontend image
+        run: |
+          TAG="${{ github.sha }}"
+          docker build \
+            --build-arg VITE_GATEWAY_URL=${{ secrets.VITE_GATEWAY_URL }} \
+            --build-arg VITE_REDIRECT_URI=${{ secrets.VITE_REDIRECT_URI }} \
+            --build-arg VITE_APP_URL=${{ secrets.VITE_APP_URL }} \
+            -t $IMAGE_PREFIX/frontend:$TAG \
+            -t $IMAGE_PREFIX/frontend:latest \
+            frontend
+          docker push $IMAGE_PREFIX/frontend:$TAG
+          docker push $IMAGE_PREFIX/frontend:latest
 
   deploy:
     needs: build-and-push

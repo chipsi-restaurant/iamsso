@@ -33,7 +33,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     clearTokens()
     setTokenState(null)
     // Redirect через Gateway к auth-service logout для очистки SSO cookie
-    window.location.href = 'http://localhost:8090/api/v1/sessions/logout?post_logout_redirect_uri=http://localhost:3000/login'
+    const gatewayUrl = import.meta.env.VITE_GATEWAY_URL || 'http://localhost:8090'
+    const appUrl = import.meta.env.VITE_APP_URL || 'http://localhost:3000'
+    window.location.href = `${gatewayUrl}/api/v1/sessions/logout?post_logout_redirect_uri=${appUrl}/login`
   }
 
   useEffect(() => {

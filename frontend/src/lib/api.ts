@@ -2,7 +2,7 @@ import axios from 'axios'
 import { getStoredToken, clearTokens } from './auth'
 
 const api = axios.create({
-  baseURL: 'http://localhost:8090',
+  baseURL: import.meta.env.VITE_GATEWAY_URL || 'http://localhost:8090',
   headers: { 'Content-Type': 'application/json' },
   withCredentials: true,
 })

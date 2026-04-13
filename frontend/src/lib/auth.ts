@@ -1,6 +1,6 @@
-const GATEWAY_URL = 'http://localhost:8090'
+const GATEWAY_URL = import.meta.env.VITE_GATEWAY_URL || 'http://localhost:8090'
 const CLIENT_ID = 'demo-app'
-const REDIRECT_URI = 'http://localhost:3000/callback'
+const REDIRECT_URI = import.meta.env.VITE_REDIRECT_URI || 'http://localhost:3000/callback'
 
 function base64UrlEncode(buffer: ArrayBuffer | Uint8Array): string {
   const bytes = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer)

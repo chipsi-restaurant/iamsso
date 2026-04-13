@@ -127,3 +127,16 @@ services:
       - notification-service
       - audit-service
       - session-service
+
+  frontend:
+    build:
+      context: frontend
+      args:
+        VITE_GATEWAY_URL: http://localhost:8090
+        VITE_REDIRECT_URI: http://localhost:3000/callback
+        VITE_APP_URL: http://localhost:3000
+    container_name: frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - gateway-service
