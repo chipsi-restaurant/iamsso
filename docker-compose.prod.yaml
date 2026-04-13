@@ -1,0 +1,137 @@
+services:
+  auth-service:
+    image: ghcr.io/sinusxd/iamsso/auth-service:latest
+    container_name: auth-service
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/iamsso_auth
+      SPRING_DATASOURCE_USERNAME: ${DB_USER:-app}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-app}
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:19092
+      APP_USERSERVICE_BASEURL: http://user-service:8081
+      APP_MFASERVICE_BASEURL: http://mfa-service:8083
+      APP_SESSIONSERVICE_BASEURL: http://session-service:8086
+      APP_ISSUER: ${APP_ISSUER:-http://localhost:8080}
+      APP_LOGINPAGE_URL: ${APP_BASE_URL:-http://localhost:8090}
+    depends_on:
+      - postgres
+      - redis
+      - kafka
+
+  user-service:
+    image: ghcr.io/sinusxd/iamsso/user-service:latest
+    container_name: user-service
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/iamsso_users
+      SPRING_DATASOURCE_USERNAME: ${DB_USER:-app}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-app}
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:19092
+      SESSION_SERVICE_URL: http://session-service:8086
+    depends_on:
+      - postgres
+      - kafka
+
+  policy-service:
+    image: ghcr.io/sinusxd/iamsso/policy-service:latest
+    container_name: policy-service
+    restart: unless-stopped
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/iamsso_policies
+      SPRING_DATASOURCE_USERNAME: ${DB_USER:-app}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-app}
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:19092
+    depends_on:
+      - postgres
+      - kafka
+
+  mfa-service:
+    image: ghcr.io/sinusxd/iamsso/mfa-service:latest
+    container_name: mfa-service
+    restart: unless-stopped
+    ports:
+      - "8083:8083"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/iamsso_mfa
+      SPRING_DATASOURCE_USERNAME: ${DB_USER:-app}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-app}
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:19092
+    depends_on:
+      - postgres
+      - kafka
+
+  notification-service:
+    image: ghcr.io/sinusxd/iamsso/notification-service:latest
+    container_name: notification-service
+    restart: unless-stopped
+    ports:
+      - "8084:8084"
+    environment:
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:19092
+      MAIL_HOST: ${MAIL_HOST:-smtp.yandex.ru}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      APP_BASE_URL: ${APP_BASE_URL:-http://localhost:8090}
+    depends_on:
+      - kafka
+
+  audit-service:
+    image: ghcr.io/sinusxd/iamsso/audit-service:latest
+    container_name: audit-service
+    restart: unless-stopped
+    ports:
+      - "8085:8085"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/iamsso_audit
+      SPRING_DATASOURCE_USERNAME: ${DB_USER:-app}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-app}
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:19092
+    depends_on:
+      - postgres
+      - kafka
+
+  session-service:
+    image: ghcr.io/sinusxd/iamsso/session-service:latest
+    container_name: session-service
+    restart: unless-stopped
+    ports:
+      - "8086:8086"
+    environment:
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:19092
+    depends_on:
+      - redis
+      - kafka
+
+  gateway-service:
+    image: ghcr.io/sinusxd/iamsso/gateway-service:latest
+    container_name: gateway-service
+    restart: unless-stopped
+    ports:
+      - "8090:8090"
+    environment:
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://auth-service:8080/.well-known/jwks.json
+      APP_POLICYSERVICE_EVALUATEURL: http://policy-service:8082/api/v1/policy/evaluate
+      AUTH_SERVICE_URL: http://auth-service:8080
+      USER_SERVICE_URL: http://user-service:8081
+      POLICY_SERVICE_URL: http://policy-service:8082
+      MFA_SERVICE_URL: http://mfa-service:8083
+      NOTIFICATION_SERVICE_URL: http://notification-service:8084
+      AUDIT_SERVICE_URL: http://audit-service:8085
+      SESSION_SERVICE_URL: http://session-service:8086
+    depends_on:
+      - auth-service
+      - user-service
+      - policy-service
+      - mfa-service
+      - notification-service
+      - audit-service
+      - session-service
