@@ -1,0 +1,12 @@
+.git
+.gradle
+.idea
+.DS_Store
+**/build
+**/out
+**/.gradle
+*.iml
+.gitnexus
+docs
+AGENTS.md
+CLAUDE.md

@@ -16,3 +16,11 @@ app:
     - /actuator/**
   policy-service:
     evaluate-url: http://localhost:8082/api/v1/policy/evaluate
+  services:
+    auth-url: http://localhost:8080
+    user-url: http://localhost:8081
+    policy-url: http://localhost:8082
+    mfa-url: http://localhost:8083
+    notification-url: http://localhost:8084
+    audit-url: http://localhost:8085
+    session-url: http://localhost:8086

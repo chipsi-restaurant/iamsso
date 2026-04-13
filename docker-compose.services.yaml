@@ -1,0 +1,129 @@
+services:
+  auth-service:
+    build: services/auth-service
+    container_name: auth-service
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/iamsso_auth
+      SPRING_DATASOURCE_USERNAME: app
+      SPRING_DATASOURCE_PASSWORD: app
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:19092
+      APP_USERSERVICE_BASEURL: http://user-service:8081
+      APP_MFASERVICE_BASEURL: http://mfa-service:8083
+      APP_SESSIONSERVICE_BASEURL: http://session-service:8086
+      APP_ISSUER: http://auth-service:8080
+      APP_LOGINPAGE_URL: http://gateway-service:8090
+    depends_on:
+      - postgres
+      - redis
+      - kafka
+
+  user-service:
+    build: services/user-service
+    container_name: user-service
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/iamsso_users
+      SPRING_DATASOURCE_USERNAME: app
+      SPRING_DATASOURCE_PASSWORD: app
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:19092
+      SESSION_SERVICE_URL: http://session-service:8086
+    depends_on:
+      - postgres
+      - kafka
+
+  policy-service:
+    build: services/policy-service
+    container_name: policy-service
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/iamsso_policies
+      SPRING_DATASOURCE_USERNAME: app
+      SPRING_DATASOURCE_PASSWORD: app
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:19092
+    depends_on:
+      - postgres
+      - kafka
+
+  mfa-service:
+    build: services/mfa-service
+    container_name: mfa-service
+    ports:
+      - "8083:8083"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/iamsso_mfa
+      SPRING_DATASOURCE_USERNAME: app
+      SPRING_DATASOURCE_PASSWORD: app
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:19092
+    depends_on:
+      - postgres
+      - kafka
+
+  notification-service:
+    build: services/notification-service
+    container_name: notification-service
+    ports:
+      - "8084:8084"
+    environment:
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:19092
+      MAIL_HOST: ${MAIL_HOST:-smtp.yandex.ru}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      APP_BASE_URL: http://gateway-service:8090
+    depends_on:
+      - kafka
+
+  audit-service:
+    build: services/audit-service
+    container_name: audit-service
+    ports:
+      - "8085:8085"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/iamsso_audit
+      SPRING_DATASOURCE_USERNAME: app
+      SPRING_DATASOURCE_PASSWORD: app
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:19092
+    depends_on:
+      - postgres
+      - kafka
+
+  session-service:
+    build: services/session-service
+    container_name: session-service
+    ports:
+      - "8086:8086"
+    environment:
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:19092
+    depends_on:
+      - redis
+      - kafka
+
+  gateway-service:
+    build: services/gateway-service
+    container_name: gateway-service
+    ports:
+      - "8090:8090"
+    environment:
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://auth-service:8080/.well-known/jwks.json
+      APP_POLICYSERVICE_EVALUATEURL: http://policy-service:8082/api/v1/policy/evaluate
+      AUTH_SERVICE_URL: http://auth-service:8080
+      USER_SERVICE_URL: http://user-service:8081
+      POLICY_SERVICE_URL: http://policy-service:8082
+      MFA_SERVICE_URL: http://mfa-service:8083
+      NOTIFICATION_SERVICE_URL: http://notification-service:8084
+      AUDIT_SERVICE_URL: http://audit-service:8085
+      SESSION_SERVICE_URL: http://session-service:8086
+    depends_on:
+      - auth-service
+      - user-service
+      - policy-service
+      - mfa-service
+      - notification-service
+      - audit-service
+      - session-service

@@ -24,3 +24,11 @@ app:
     - /reset-password
   policy-service:
     evaluate-url: http://localhost:8082/api/v1/policy/evaluate
+  services:
+    auth-url: ${AUTH_SERVICE_URL:http://localhost:8080}
+    user-url: ${USER_SERVICE_URL:http://localhost:8081}
+    policy-url: ${POLICY_SERVICE_URL:http://localhost:8082}
+    mfa-url: ${MFA_SERVICE_URL:http://localhost:8083}
+    notification-url: ${NOTIFICATION_SERVICE_URL:http://localhost:8084}
+    audit-url: ${AUDIT_SERVICE_URL:http://localhost:8085}
+    session-url: ${SESSION_SERVICE_URL:http://localhost:8086}
