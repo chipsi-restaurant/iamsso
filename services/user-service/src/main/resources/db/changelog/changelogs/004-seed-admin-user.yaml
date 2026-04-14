@@ -1,0 +1,18 @@
+databaseChangeLog:
+  - changeSet:
+      id: 004-seed-admin-user
+      author: Arseniy Kolyshkin
+      changes:
+        - insert:
+            schemaName: iamsso_users
+            tableName: users
+            columns:
+              - column: { name: id, valueComputed: "gen_random_uuid()" }
+              - column: { name: email, value: "admin@kolyshkin.space" }
+              - column: { name: username, value: "admin" }
+              - column: { name: display_name, value: "Administrator" }
+              - column: { name: password_hash, value: "$2a$10$3QUHR4lBuwCzj61aV5MgyeeTSt9KF0GxbiZEQFkn0EcaXrrWRu16K" }
+              - column: { name: status, value: "ACTIVE" }
+              - column: { name: email_verified, valueBoolean: true }
+              - column: { name: locale, value: "ru" }
+              - column: { name: role, value: "admin" }
