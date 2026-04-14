@@ -108,12 +108,17 @@ class AuthorizationController(
 
     @PostMapping("/oauth2/authorize/callback")
     fun callback(
-        @RequestParam("auth_request_id") authRequestId: String,
-        @RequestParam("username") username: String,
-        @RequestParam("password") password: String,
         request: HttpServletRequest,
         response: HttpServletResponse,
     ): RedirectView {
+        val formParams = parseFormBody(request)
+        val authRequestId = formParams["auth_request_id"]
+            ?: return errorNoRedirect(response, "missing auth_request_id")
+        val username = formParams["username"]
+            ?: return errorNoRedirect(response, "missing username")
+        val password = formParams["password"]
+            ?: return errorNoRedirect(response, "missing password")
+
         val loginPage = props.loginPage.url
 
         val authRequest = authRequestService.getAndDelete(authRequestId)
@@ -210,5 +215,22 @@ class AuthorizationController(
     private fun errorResponse(redirectUri: String?, error: String, state: String?): RedirectView {
         return if (redirectUri != null) errorRedirect(redirectUri, error, state)
         else RedirectView("?error=$error")
+    }
+
+    private fun parseFormBody(request: HttpServletRequest): Map<String, String> {
+        // Сначала проверяем стандартные параметры (могут прийти через query string)
+        val fromParams = request.parameterMap.mapValues { it.value.firstOrNull() ?: "" }.filterValues { it.isNotEmpty() }
+        if (fromParams.isNotEmpty()) return fromParams
+
+        // Fallback: читаем тело вручную (Spring Boot 4 + Tomcat 11 иногда не парсит form body)
+        val body = request.reader.use { it.readText() }
+        if (body.isBlank()) return emptyMap()
+        return body.split("&").mapNotNull { pair ->
+            val idx = pair.indexOf('=')
+            if (idx < 0) return@mapNotNull null
+            val k = java.net.URLDecoder.decode(pair.substring(0, idx), Charsets.UTF_8)
+            val v = java.net.URLDecoder.decode(pair.substring(idx + 1), Charsets.UTF_8)
+            k to v
+        }.toMap()
     }
 }
