@@ -1,0 +1,126 @@
+databaseChangeLog:
+  - changeSet:
+      id: 002-seed-admin-allow-all
+      author: Arseniy Kolyshkin
+      changes:
+        - insert:
+            schemaName: iamsso_policies
+            tableName: policies
+            columns:
+              - column: { name: id, valueComputed: "gen_random_uuid()" }
+              - column: { name: name, value: "admin-allow-all" }
+              - column: { name: description, value: "Admin can do everything" }
+              - column: { name: role, value: "admin" }
+              - column: { name: effect, value: "ALLOW" }
+              - column: { name: action, value: "*" }
+              - column: { name: resource_pattern, value: "*" }
+              - column: { name: priority, valueNumeric: 100 }
+              - column: { name: enabled, valueBoolean: true }
+
+  - changeSet:
+      id: 002-seed-user-read-users
+      author: Arseniy Kolyshkin
+      changes:
+        - insert:
+            schemaName: iamsso_policies
+            tableName: policies
+            columns:
+              - column: { name: id, valueComputed: "gen_random_uuid()" }
+              - column: { name: name, value: "user-read-users" }
+              - column: { name: description, value: "User can read user data" }
+              - column: { name: role, value: "user" }
+              - column: { name: effect, value: "ALLOW" }
+              - column: { name: action, value: "READ" }
+              - column: { name: resource_pattern, value: "users/*" }
+              - column: { name: priority, valueNumeric: 10 }
+              - column: { name: enabled, valueBoolean: true }
+
+  - changeSet:
+      id: 002-seed-user-update-users
+      author: Arseniy Kolyshkin
+      changes:
+        - insert:
+            schemaName: iamsso_policies
+            tableName: policies
+            columns:
+              - column: { name: id, valueComputed: "gen_random_uuid()" }
+              - column: { name: name, value: "user-update-users" }
+              - column: { name: description, value: "User can update user data (own profile/password)" }
+              - column: { name: role, value: "user" }
+              - column: { name: effect, value: "ALLOW" }
+              - column: { name: action, value: "UPDATE" }
+              - column: { name: resource_pattern, value: "users/*" }
+              - column: { name: priority, valueNumeric: 10 }
+              - column: { name: enabled, valueBoolean: true }
+
+  - changeSet:
+      id: 002-seed-user-write-users
+      author: Arseniy Kolyshkin
+      changes:
+        - insert:
+            schemaName: iamsso_policies
+            tableName: policies
+            columns:
+              - column: { name: id, valueComputed: "gen_random_uuid()" }
+              - column: { name: name, value: "user-write-users" }
+              - column: { name: description, value: "User can perform write operations on user resources (password change, etc)" }
+              - column: { name: role, value: "user" }
+              - column: { name: effect, value: "ALLOW" }
+              - column: { name: action, value: "CREATE" }
+              - column: { name: resource_pattern, value: "users/*" }
+              - column: { name: priority, valueNumeric: 10 }
+              - column: { name: enabled, valueBoolean: true }
+
+  - changeSet:
+      id: 002-seed-user-mfa-all
+      author: Arseniy Kolyshkin
+      changes:
+        - insert:
+            schemaName: iamsso_policies
+            tableName: policies
+            columns:
+              - column: { name: id, valueComputed: "gen_random_uuid()" }
+              - column: { name: name, value: "user-mfa-all" }
+              - column: { name: description, value: "User can manage own MFA factors" }
+              - column: { name: role, value: "user" }
+              - column: { name: effect, value: "ALLOW" }
+              - column: { name: action, value: "*" }
+              - column: { name: resource_pattern, value: "mfa/*" }
+              - column: { name: priority, valueNumeric: 10 }
+              - column: { name: enabled, valueBoolean: true }
+
+  - changeSet:
+      id: 002-seed-user-sessions-all
+      author: Arseniy Kolyshkin
+      changes:
+        - insert:
+            schemaName: iamsso_policies
+            tableName: policies
+            columns:
+              - column: { name: id, valueComputed: "gen_random_uuid()" }
+              - column: { name: name, value: "user-sessions-all" }
+              - column: { name: description, value: "User can manage own sessions (logout, list)" }
+              - column: { name: role, value: "user" }
+              - column: { name: effect, value: "ALLOW" }
+              - column: { name: action, value: "*" }
+              - column: { name: resource_pattern, value: "sessions/*" }
+              - column: { name: priority, valueNumeric: 10 }
+              - column: { name: enabled, valueBoolean: true }
+
+  - changeSet:
+      id: 002-seed-moderator-read-all
+      author: Arseniy Kolyshkin
+      changes:
+        - insert:
+            schemaName: iamsso_policies
+            tableName: policies
+            columns:
+              - column: { name: id, valueComputed: "gen_random_uuid()" }
+              - column: { name: name, value: "moderator-read-all" }
+              - column: { name: description, value: "Moderator can read everything (incl. audit logs)" }
+              - column: { name: role, value: "moderator" }
+              - column: { name: effect, value: "ALLOW" }
+              - column: { name: action, value: "READ" }
+              - column: { name: resource_pattern, value: "*" }
+              - column: { name: priority, valueNumeric: 50 }
+              - column: { name: enabled, valueBoolean: true }
