@@ -15,7 +15,7 @@ class RevocationController(
     private val refreshTokenRepository: RefreshTokenRepository,
 ) {
 
-    @PostMapping("/oauth2/revoke", consumes = ["application/x-www-form-urlencoded"])
+    @PostMapping("/oauth2/revoke")
     fun revoke(
         @RequestParam params: Map<String, String>,
         request: HttpServletRequest,

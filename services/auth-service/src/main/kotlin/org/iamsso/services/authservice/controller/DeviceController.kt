@@ -20,7 +20,7 @@ class DeviceController(
     private val props: AppProperties,
 ) {
 
-    @PostMapping("/oauth2/device_authorization", consumes = ["application/x-www-form-urlencoded"])
+    @PostMapping("/oauth2/device_authorization")
     fun deviceAuthorization(
         @RequestParam params: Map<String, String>,
         request: HttpServletRequest,

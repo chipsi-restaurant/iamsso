@@ -17,7 +17,7 @@ class IntrospectionController(
     private val refreshTokenRepository: RefreshTokenRepository,
 ) {
 
-    @PostMapping("/oauth2/introspect", consumes = ["application/x-www-form-urlencoded"])
+    @PostMapping("/oauth2/introspect")
     fun introspect(
         @RequestParam params: Map<String, String>,
         request: HttpServletRequest,

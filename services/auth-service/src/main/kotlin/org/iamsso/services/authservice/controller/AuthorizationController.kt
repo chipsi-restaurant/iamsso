@@ -106,7 +106,7 @@ class AuthorizationController(
         return RedirectView("/login?auth_request_id=${authRequest.authRequestId}")
     }
 
-    @PostMapping("/oauth2/authorize/callback", consumes = ["application/x-www-form-urlencoded"])
+    @PostMapping("/oauth2/authorize/callback")
     fun callback(
         @RequestParam("auth_request_id") authRequestId: String,
         @RequestParam("username") username: String,

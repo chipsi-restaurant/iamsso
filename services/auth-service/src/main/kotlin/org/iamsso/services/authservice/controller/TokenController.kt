@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 class TokenController(private val tokenService: TokenService) {
 
-    @PostMapping("/oauth2/token", consumes = ["application/x-www-form-urlencoded"])
+    @PostMapping("/oauth2/token")
     fun token(
         @RequestParam params: Map<String, String>,
         request: HttpServletRequest,
