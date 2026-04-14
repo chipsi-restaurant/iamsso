@@ -885,6 +885,17 @@ components:
           default: 'en'
           maxLength: 10
           description: Локаль пользователя (например, ru, en)
+        role:
+          type: string
+          enum: [user, admin, moderator]
+          default: user
+          description: Роль пользователя. Может назначить только админ.
+        activate:
+          type: boolean
+          default: false
+          description: |
+            Если true, пользователь создаётся сразу в статусе ACTIVE с подтверждённым email
+            (без отправки письма). Используется админами для ручного создания.
 
     UpdateUserRequest:
       type: object

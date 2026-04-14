@@ -52,7 +52,14 @@ export function useUserProfile(id: string) {
 export function useCreateUser() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (data: { email: string; password: string; username?: string; displayName?: string }) =>
+    mutationFn: (data: {
+      email: string
+      password: string
+      username?: string
+      displayName?: string
+      role?: 'user' | 'admin' | 'moderator'
+      activate?: boolean
+    }) =>
       api.post<User>('/api/v1/users', data).then(r => r.data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['users'] }),
   })

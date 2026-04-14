@@ -104,7 +104,14 @@ export default function UsersPage() {
 
 function CreateUserModal({ onClose }: { onClose: () => void }) {
   const createUser = useCreateUser()
-  const [form, setForm] = useState({ email: '', password: '', username: '', displayName: '' })
+  const [form, setForm] = useState<{
+    email: string
+    password: string
+    username: string
+    displayName: string
+    role: 'user' | 'admin' | 'moderator'
+    activate: boolean
+  }>({ email: '', password: '', username: '', displayName: '', role: 'user', activate: true })
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -114,6 +121,8 @@ function CreateUserModal({ onClose }: { onClose: () => void }) {
         password: form.password,
         username: form.username || undefined,
         displayName: form.displayName || undefined,
+        role: form.role,
+        activate: form.activate,
       },
       { onSuccess: onClose },
     )
@@ -161,6 +170,28 @@ function CreateUserModal({ onClose }: { onClose: () => void }) {
                 className="w-full px-3 py-2 border border-border rounded-md text-sm text-navy focus:outline-none focus:ring-2 focus:ring-purple/30 focus:border-purple"
               />
             </Field>
+            <Field label="Роль" required>
+              <select
+                value={form.role}
+                onChange={(e) => setForm({ ...form, role: e.target.value as typeof form.role })}
+                className="w-full px-3 py-2 border border-border rounded-md text-sm text-navy bg-white focus:outline-none focus:ring-2 focus:ring-purple/30 focus:border-purple"
+              >
+                <option value="user">user</option>
+                <option value="moderator">moderator</option>
+                <option value="admin">admin</option>
+              </select>
+            </Field>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={form.activate}
+                onChange={(e) => setForm({ ...form, activate: e.target.checked })}
+                className="w-4 h-4 rounded border-border text-purple focus:ring-2 focus:ring-purple/30"
+              />
+              <span className="text-sm text-navy">
+                Активировать сразу (без подтверждения email)
+              </span>
+            </label>
             {createUser.isError && (
               <p className="text-sm text-ruby">Не удалось создать пользователя. Попробуйте ещё раз.</p>
             )}

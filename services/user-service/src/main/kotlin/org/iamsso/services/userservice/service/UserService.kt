@@ -50,10 +50,15 @@ class UserService(
             passwordHash = encoder.encode(request.password) ?: throw ServiceException("PASSWORD_HASHING_FAILED", "Failed to hash password"),
             locale = request.locale ?: "en",
         )
+        request.role?.let { user.role = it.value }
+        if (request.activate == true) {
+            user.status = EntityUserStatus.ACTIVE
+            user.emailVerified = true
+        }
         user.profile = UserProfileEntity(user = user)
         userRepo.save(user)
 
-        if (user.email != null) createAndSendVerificationToken(user)
+        if (user.email != null && request.activate != true) createAndSendVerificationToken(user)
         events.userCreated(user.id, user.email, user.username, user.status.name)
         return UserMapper.toResponse(user)
     }
