@@ -26,6 +26,7 @@ app:
     - /mfa-challenge
     - /forgot-password
     - /reset-password
+    - /api/v1/users/*/verify-email
   policy-service:
     evaluate-url: http://localhost:8082/api/v1/policy/evaluate
   services:
