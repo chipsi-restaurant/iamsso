@@ -15,6 +15,7 @@ class RoutesConfig(
     @Value("\${app.services.notification-url}") private val notificationUrl: String,
     @Value("\${app.services.audit-url}") private val auditUrl: String,
     @Value("\${app.services.session-url}") private val sessionUrl: String,
+    @Value("\${app.services.vacation-url}") private val vacationUrl: String,
 ) {
 
     @Bean
@@ -41,6 +42,8 @@ class RoutesConfig(
         .route("mfa-service") { it.path("/api/v1/mfa/**").uri(mfaUrl) }
         // Protected — audit service
         .route("audit-service") { it.path("/api/v1/audit/**").uri(auditUrl) }
+        // Protected — vacation portal backend
+        .route("vacation-portal") { it.path("/api/v1/vacation-requests/**").uri(vacationUrl) }
         // Health — proxied actuator endpoints
         .route("health-auth") { it.path("/health/auth").filters { f -> f.rewritePath("/health/auth", "/actuator/health") }.uri(authUrl) }
         .route("health-user") { it.path("/health/user").filters { f -> f.rewritePath("/health/user", "/actuator/health") }.uri(userUrl) }

@@ -8,4 +8,5 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-E
     CREATE DATABASE iamsso_notifications;
     CREATE DATABASE iamsso_mfa;
     CREATE DATABASE iamsso_audit;
+    CREATE DATABASE vacation_portal;
 EOSQL

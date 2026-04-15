@@ -37,3 +37,4 @@ app:
     notification-url: ${NOTIFICATION_SERVICE_URL:http://localhost:8084}
     audit-url: ${AUDIT_SERVICE_URL:http://localhost:8085}
     session-url: ${SESSION_SERVICE_URL:http://localhost:8086}
+    vacation-url: ${VACATION_SERVICE_URL:http://localhost:8087}

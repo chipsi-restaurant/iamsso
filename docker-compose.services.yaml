@@ -119,6 +119,7 @@ services:
       NOTIFICATION_SERVICE_URL: http://notification-service:8084
       AUDIT_SERVICE_URL: http://audit-service:8085
       SESSION_SERVICE_URL: http://session-service:8086
+      VACATION_SERVICE_URL: http://vacation-backend:8087
     depends_on:
       - auth-service
       - user-service
@@ -140,3 +141,30 @@ services:
       - "3000:80"
     depends_on:
       - gateway-service
+
+  vacation-backend:
+    build: vacation-portal/backend
+    container_name: vacation-backend
+    ports:
+      - "8087:8087"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/vacation_portal
+      SPRING_DATASOURCE_USERNAME: app
+      SPRING_DATASOURCE_PASSWORD: app
+    depends_on:
+      - postgres
+
+  vacation-frontend:
+    build:
+      context: vacation-portal/frontend
+      args:
+        VITE_GATEWAY_URL: http://localhost:8090
+        VITE_REDIRECT_URI: http://localhost:3001/callback
+        VITE_APP_URL: http://localhost:3001
+        VITE_CLIENT_SECRET: vacation-secret
+    container_name: vacation-frontend
+    ports:
+      - "3001:80"
+    depends_on:
+      - gateway-service
+      - vacation-backend

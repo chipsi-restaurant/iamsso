@@ -1,0 +1,19 @@
+databaseChangeLog:
+  - changeSet:
+      id: 005-seed-vacation-oauth-client
+      author: Arseniy Kolyshkin
+      changes:
+        - insert:
+            schemaName: iamsso_auth
+            tableName: oauth_clients
+            columns:
+              - column: { name: client_id, value: "vacation-portal" }
+              - column: { name: client_name, value: "Vacation Portal" }
+              - column: { name: client_secret_hash, value: "$2a$10$mlyf88540bPC8vvcuEaQHOecMQvlhzCeRapp8vzU.ZOzz452m1/xi" }
+              - column: { name: grant_types, value: "authorization_code,refresh_token" }
+              - column: { name: redirect_uris, value: "http://localhost:3001/callback,https://kolyshkin.space/vacation/callback" }
+              - column: { name: scopes, value: "openid,profile,email" }
+              - column: { name: token_endpoint_auth_method, value: "client_secret_basic" }
+              - column: { name: access_token_ttl_seconds, valueNumeric: 3600 }
+              - column: { name: refresh_token_ttl_seconds, valueNumeric: 2592000 }
+              - column: { name: device_code_ttl_seconds, valueNumeric: 600 }

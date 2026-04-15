@@ -1,0 +1,32 @@
+spring:
+  application:
+    name: vacation-portal
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/vacation_portal
+    username: app
+    password: app
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        default_schema: vacation_portal
+        jdbc.time_zone: UTC
+
+  liquibase:
+    enabled: true
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+    liquibase-schema: public
+    default-schema: vacation_portal
+
+server:
+  port: 8087
+  forward-headers-strategy: native
+  tomcat:
+    use-relative-redirects: true

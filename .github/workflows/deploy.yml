@@ -51,6 +51,16 @@ jobs:
             echo "::endgroup::"
           done
 
+      - name: Build & push vacation-portal backend
+        run: |
+          TAG="${{ github.sha }}"
+          docker build \
+            -t $IMAGE_PREFIX/vacation-backend:$TAG \
+            -t $IMAGE_PREFIX/vacation-backend:latest \
+            vacation-portal/backend
+          docker push $IMAGE_PREFIX/vacation-backend:$TAG
+          docker push $IMAGE_PREFIX/vacation-backend:latest
+
       - name: Build & push frontend image
         run: |
           TAG="${{ github.sha }}"
@@ -63,6 +73,20 @@ jobs:
             frontend
           docker push $IMAGE_PREFIX/frontend:$TAG
           docker push $IMAGE_PREFIX/frontend:latest
+
+      - name: Build & push vacation-portal frontend
+        run: |
+          TAG="${{ github.sha }}"
+          docker build \
+            --build-arg VITE_GATEWAY_URL=${{ secrets.VITE_GATEWAY_URL }} \
+            --build-arg VITE_REDIRECT_URI=${{ secrets.VITE_VACATION_REDIRECT_URI }} \
+            --build-arg VITE_APP_URL=${{ secrets.VITE_VACATION_APP_URL }} \
+            --build-arg VITE_CLIENT_SECRET=${{ secrets.VITE_VACATION_CLIENT_SECRET }} \
+            -t $IMAGE_PREFIX/vacation-frontend:$TAG \
+            -t $IMAGE_PREFIX/vacation-frontend:latest \
+            vacation-portal/frontend
+          docker push $IMAGE_PREFIX/vacation-frontend:$TAG
+          docker push $IMAGE_PREFIX/vacation-frontend:latest
 
   deploy:
     needs: build-and-push

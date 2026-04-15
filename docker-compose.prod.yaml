@@ -127,6 +127,7 @@ services:
       NOTIFICATION_SERVICE_URL: http://notification-service:8084
       AUDIT_SERVICE_URL: http://audit-service:8085
       SESSION_SERVICE_URL: http://session-service:8086
+      VACATION_SERVICE_URL: http://vacation-backend:8087
     depends_on:
       - auth-service
       - user-service
@@ -144,3 +145,26 @@ services:
       - "3000:80"
     depends_on:
       - gateway-service
+
+  vacation-backend:
+    image: ghcr.io/sinusxd/iamsso/vacation-backend:latest
+    container_name: vacation-backend
+    restart: unless-stopped
+    ports:
+      - "8087:8087"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/vacation_portal
+      SPRING_DATASOURCE_USERNAME: ${DB_USER:-app}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-app}
+    depends_on:
+      - postgres
+
+  vacation-frontend:
+    image: ghcr.io/sinusxd/iamsso/vacation-frontend:latest
+    container_name: vacation-frontend
+    restart: unless-stopped
+    ports:
+      - "3001:80"
+    depends_on:
+      - gateway-service
+      - vacation-backend
