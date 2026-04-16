@@ -21,7 +21,7 @@ class SecurityConfig {
     fun corsConfigurationSource(): CorsConfigurationSource {
         // Strict CORS for API endpoints (frontend AJAX)
         val apiConfig = CorsConfiguration().apply {
-            allowedOrigins = listOf("http://localhost:3000", "http://localhost:8090")
+            allowedOrigins = listOf("http://localhost:3000", "http://localhost:3001", "http://localhost:8090")
             allowedMethods = listOf("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
             allowedHeaders = listOf("Authorization", "Content-Type", "Accept")
             allowCredentials = true
