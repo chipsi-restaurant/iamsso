@@ -42,6 +42,12 @@ class SsoSessionService(
         return objectMapper.readValue(json, SsoSession::class.java)
     }
 
+    fun findAllForUser(userId: UUID): List<SsoSession> {
+        val sessionIds = redis.opsForSet().members("$userIndex$userId") ?: return emptyList()
+        return sessionIds.mapNotNull { get(it) }
+            .sortedByDescending { it.lastActivityAt }
+    }
+
     fun addClient(sessionId: String, clientId: String) {
         val session = get(sessionId) ?: return
         if (clientId !in session.clientIds) session.clientIds.add(clientId)

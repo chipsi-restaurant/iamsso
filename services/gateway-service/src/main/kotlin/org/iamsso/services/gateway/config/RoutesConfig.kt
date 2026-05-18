@@ -26,6 +26,7 @@ class RoutesConfig(
         .route("auth-login") { it.path("/login").uri(authUrl) }
         .route("auth-forgot-password") { it.path("/forgot-password").uri(authUrl) }
         .route("auth-reset-password") { it.path("/reset-password").uri(authUrl) }
+        .route("auth-mfa-challenge") { it.path("/mfa-challenge", "/mfa-challenge/**").uri(authUrl) }
         .route("auth-userinfo") { it.path("/userinfo").uri(authUrl) }
         // Protected — user service
         .route("user-service") { it.path("/api/v1/users/**").uri(userUrl) }
@@ -33,6 +34,7 @@ class RoutesConfig(
         .route("auth-clients") { it.path("/api/v1/clients/**").uri(authUrl) }
         // Specific logout — must come BEFORE session-service wildcard (first-match)
         .route("auth-logout") { it.path("/api/v1/sessions/logout").uri(authUrl) }
+        .route("auth-logout-all") { it.path("/api/v1/sessions/logout-all").uri(authUrl) }
         .route("session-service") { it.path("/api/v1/sessions/**").uri(sessionUrl) }
         // Protected — policy service
         .route("policy-policies") { it.path("/api/v1/policies/**").uri(policyUrl) }

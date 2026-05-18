@@ -30,6 +30,19 @@ class LogoutController(
         response: HttpServletResponse,
     ) = doLogout(request, response, postLogoutUri)
 
+    @PostMapping("/logout-all", consumes = ["application/x-www-form-urlencoded", "application/json", "*/*"])
+    fun logoutAll(
+        request: HttpServletRequest,
+        response: HttpServletResponse,
+    ) {
+        val sessionId = request.cookies?.find { it.name == "SSO_SESSION" }?.value
+        if (sessionId != null) {
+            val session = sessionServiceClient.get(sessionId)
+            if (session != null) sessionServiceClient.deleteAllForUser(session.userId)
+        }
+        clearCookie(response)
+    }
+
     private fun doLogout(request: HttpServletRequest, response: HttpServletResponse, postLogoutUri: String?) {
         val sessionId = request.cookies?.find { it.name == "SSO_SESSION" }?.value
         if (sessionId != null) {

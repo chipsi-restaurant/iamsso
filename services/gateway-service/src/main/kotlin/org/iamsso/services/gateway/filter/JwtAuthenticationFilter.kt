@@ -1,6 +1,7 @@
 package org.iamsso.services.gateway.filter
 
 import org.iamsso.services.gateway.config.AppProperties
+import org.iamsso.services.gateway.service.SessionValidator
 import org.springframework.cloud.gateway.filter.GatewayFilterChain
 import org.springframework.cloud.gateway.filter.GlobalFilter
 import org.springframework.core.Ordered
@@ -17,6 +18,7 @@ import reactor.core.publisher.Mono
 class JwtAuthenticationFilter(
     private val jwtDecoder: ReactiveJwtDecoder,
     private val appProperties: AppProperties,
+    private val sessionValidator: SessionValidator,
 ) : GlobalFilter, Ordered {
 
     private val pathMatcher = AntPathMatcher()
@@ -38,11 +40,12 @@ class JwtAuthenticationFilter(
             .flatMap { jwt ->
                 val userId = jwt.subject ?: ""
                 val role = jwt.getClaimAsString("role") ?: "user"
+                val sid = jwt.getClaimAsString("sid") ?: ""
                 val attributes = exchange.attributes
                 attributes["jwt.sub"] = userId
                 attributes["jwt.role"] = role
                 attributes["jwt.scope"] = jwt.getClaimAsString("scope") ?: ""
-                attributes["jwt.sid"] = jwt.getClaimAsString("sid") ?: ""
+                attributes["jwt.sid"] = sid
                 val email = jwt.getClaimAsString("email") ?: ""
                 val mutatedRequest = exchange.request.mutate()
                     .header("X-User-Id", userId)
@@ -50,7 +53,18 @@ class JwtAuthenticationFilter(
                     .header("X-User-Email", email)
                     .build()
                 val mutatedExchange = exchange.mutate().request(mutatedRequest).build()
-                chain.filter(mutatedExchange)
+
+                // If token is tied to an SSO session, verify the session is still alive.
+                // This enables immediate effect of logout/logout-all across devices, even
+                // while access tokens are still within their exp window.
+                if (sid.isBlank()) {
+                    chain.filter(mutatedExchange)
+                } else {
+                    sessionValidator.isAlive(sid).flatMap { alive ->
+                        if (alive) chain.filter(mutatedExchange)
+                        else unauthorized(exchange, "Session revoked")
+                    }
+                }
             }
             .onErrorResume { e ->
                 unauthorized(exchange, "Failed to validate the token")
