@@ -25,6 +25,7 @@ app:
     - /api/v1/sessions/logout
     - /api/v1/sessions/logout-all
     - /mfa-challenge
+    - /mfa-challenge/**
     - /forgot-password
     - /reset-password
     - /api/v1/users/*/verify-email
