@@ -27,13 +27,15 @@ export interface AuditFilters {
   to?: string
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 export function useAuditEvents(filters: AuditFilters, page = 0, size = 50) {
   const params = new URLSearchParams({ page: String(page), size: String(size) })
-  if (filters.userId) params.set('userId', filters.userId)
+  if (filters.userId && UUID_RE.test(filters.userId)) params.set('userId', filters.userId)
   if (filters.eventType) params.set('eventType', filters.eventType)
   if (filters.eventSource) params.set('eventSource', filters.eventSource)
-  if (filters.from) params.set('from', filters.from)
-  if (filters.to) params.set('to', filters.to)
+  if (filters.from) params.set('from', new Date(filters.from).toISOString())
+  if (filters.to) params.set('to', new Date(filters.to).toISOString())
 
   return useQuery({
     queryKey: ['audit', 'events', filters, page, size],

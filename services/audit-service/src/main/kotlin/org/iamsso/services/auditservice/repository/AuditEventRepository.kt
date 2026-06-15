@@ -21,8 +21,8 @@ object AuditEventSpecs {
     ): Specification<AuditEventEntity> = Specification { root, _, cb ->
         val predicates = mutableListOf<jakarta.persistence.criteria.Predicate>()
         if (userId != null) predicates += cb.equal(root.get<UUID>("userId"), userId)
-        if (eventType != null) predicates += cb.equal(root.get<String>("eventType"), eventType)
-        if (eventSource != null) predicates += cb.equal(root.get<String>("eventSource"), eventSource)
+        if (eventType != null) predicates += cb.like(cb.lower(root.get("eventType")), "%${eventType.lowercase()}%")
+        if (eventSource != null) predicates += cb.like(cb.lower(root.get("eventSource")), "%${eventSource.lowercase()}%")
         if (from != null) predicates += cb.greaterThanOrEqualTo(root.get("timestamp"), from)
         if (to != null) predicates += cb.lessThanOrEqualTo(root.get("timestamp"), to)
         cb.and(*predicates.toTypedArray())

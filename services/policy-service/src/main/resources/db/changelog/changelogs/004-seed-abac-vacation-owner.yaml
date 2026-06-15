@@ -1,0 +1,42 @@
+databaseChangeLog:
+  - changeSet:
+      id: 004-seed-vacation-user-update-own
+      author: Arseniy Kolyshkin
+      changes:
+        - insert:
+            schemaName: iamsso_policies
+            tableName: policies
+            columns:
+              - column: { name: id, valueComputed: "gen_random_uuid()" }
+              - column: { name: name, value: "vacation-user-update-own" }
+              - column: { name: description, value: "Users can update only their own vacation requests (ABAC owner-check)" }
+              - column: { name: role, value: "user" }
+              - column: { name: effect, value: "ALLOW" }
+              - column: { name: action, value: "UPDATE" }
+              - column: { name: resource_pattern, value: "vacation-requests/*" }
+              - column:
+                  name: conditions
+                  value: '[{"field":"resource.owner_id","operator":"==","value":"$subject.user_id"}]'
+              - column: { name: priority, valueNumeric: 20 }
+              - column: { name: enabled, valueBoolean: true }
+
+  - changeSet:
+      id: 004-seed-vacation-user-delete-own
+      author: Arseniy Kolyshkin
+      changes:
+        - insert:
+            schemaName: iamsso_policies
+            tableName: policies
+            columns:
+              - column: { name: id, valueComputed: "gen_random_uuid()" }
+              - column: { name: name, value: "vacation-user-delete-own" }
+              - column: { name: description, value: "Users can delete only their own vacation requests (ABAC owner-check)" }
+              - column: { name: role, value: "user" }
+              - column: { name: effect, value: "ALLOW" }
+              - column: { name: action, value: "DELETE" }
+              - column: { name: resource_pattern, value: "vacation-requests/*" }
+              - column:
+                  name: conditions
+                  value: '[{"field":"resource.owner_id","operator":"==","value":"$subject.user_id"}]'
+              - column: { name: priority, valueNumeric: 20 }
+              - column: { name: enabled, valueBoolean: true }

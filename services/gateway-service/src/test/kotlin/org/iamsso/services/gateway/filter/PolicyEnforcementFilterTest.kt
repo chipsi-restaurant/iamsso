@@ -127,6 +127,32 @@ class PolicyEnforcementFilterTest {
     }
 
     @Test
+    fun `request to policy service includes sessionId and scope in context`() {
+        mockWebServer.enqueue(jsonResponse("""{"allowed":true,"reason":""}"""))
+
+        val request = MockServerHttpRequest.get("/api/v1/users/99").build()
+        val exchange = MockServerWebExchange.from(request)
+        exchange.attributes["jwt.sub"] = "user-789"
+        exchange.attributes["jwt.role"] = "admin"
+        exchange.attributes["jwt.sid"] = "session-abc"
+        exchange.attributes["jwt.scope"] = "read:users"
+
+        StepVerifier.create(filter.filter(exchange, chain))
+            .verifyComplete()
+
+        val recorded = mockWebServer.takeRequest()
+        val body: Map<String, Any> = mapper.readValue(recorded.body.readUtf8())
+
+        @Suppress("UNCHECKED_CAST")
+        val subject = body["subject"] as Map<String, String>
+        assertEquals("session-abc", subject["sessionId"])
+
+        @Suppress("UNCHECKED_CAST")
+        val context = body["context"] as Map<String, String>
+        assertEquals("read:users", context["subject.scope"])
+    }
+
+    @Test
     fun `policy service unavailable returns 503`() {
         mockWebServer.shutdown()
 

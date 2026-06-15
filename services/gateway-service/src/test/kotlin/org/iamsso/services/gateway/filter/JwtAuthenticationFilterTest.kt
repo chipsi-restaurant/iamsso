@@ -1,6 +1,7 @@
 package org.iamsso.services.gateway.filter
 
 import org.iamsso.services.gateway.config.AppProperties
+import org.iamsso.services.gateway.service.SessionValidator
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -28,6 +29,8 @@ class JwtAuthenticationFilterTest {
     private lateinit var jwtDecoder: ReactiveJwtDecoder
     private lateinit var chain: GatewayFilterChain
     private lateinit var filter: JwtAuthenticationFilter
+    private lateinit var sessionValidator: SessionValidator
+
 
     private val appProperties = AppProperties(
         publicPaths = listOf("/oauth2/**", "/.well-known/**", "/login", "/actuator/**"),
@@ -37,7 +40,8 @@ class JwtAuthenticationFilterTest {
     fun setUp() {
         jwtDecoder = mock()
         chain = mock()
-        filter = JwtAuthenticationFilter(jwtDecoder, appProperties)
+        sessionValidator = mock()
+        filter = JwtAuthenticationFilter(jwtDecoder, appProperties, sessionValidator)
         whenever(chain.filter(any<ServerWebExchange>())).thenReturn(Mono.empty())
     }
 
@@ -92,6 +96,8 @@ class JwtAuthenticationFilterTest {
             .build()
 
         whenever(jwtDecoder.decode("valid-token")).thenReturn(Mono.just(jwt))
+        whenever(sessionValidator.isAlive("session-456"))
+            .thenReturn(Mono.just(true))
 
         val request = MockServerHttpRequest.get("/api/users")
             .header(HttpHeaders.AUTHORIZATION, "Bearer valid-token")

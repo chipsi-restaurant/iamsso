@@ -32,13 +32,20 @@ class PolicyEnforcementFilter(
 
         val userId = exchange.attributes["jwt.sub"] as? String ?: ""
         val role = exchange.attributes["jwt.role"] as? String ?: "user"
+        val sid = exchange.attributes["jwt.sid"] as? String ?: ""
+        val scope = exchange.attributes["jwt.scope"] as? String ?: ""
+        val ip = exchange.request.remoteAddress?.address?.hostAddress ?: ""
         val action = mapAction(exchange.request.method)
         val resource = extractResource(path)
 
         val requestBody = mapOf(
-            "subject" to mapOf("userId" to userId, "role" to role),
+            "subject" to mapOf("userId" to userId, "role" to role, "sessionId" to sid),
             "action" to action,
             "resource" to resource,
+            "context" to mapOf(
+                "subject.scope" to scope,
+                "env.ip" to ip,
+            ),
         )
 
         return webClient.post()
