@@ -5,7 +5,7 @@ services:
     ports:
       - "8080:8080"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/iamsso_auth
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/iamsso_auth?sslmode=disable
       SPRING_DATASOURCE_USERNAME: app
       SPRING_DATASOURCE_PASSWORD: app
       SPRING_DATA_REDIS_HOST: redis
@@ -26,7 +26,7 @@ services:
     ports:
       - "8081:8081"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/iamsso_users
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/iamsso_users?sslmode=disable
       SPRING_DATASOURCE_USERNAME: app
       SPRING_DATASOURCE_PASSWORD: app
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:19092
@@ -41,7 +41,7 @@ services:
     ports:
       - "8082:8082"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/iamsso_policies
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/iamsso_policies?sslmode=disable
       SPRING_DATASOURCE_USERNAME: app
       SPRING_DATASOURCE_PASSWORD: app
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:19092
@@ -55,7 +55,7 @@ services:
     ports:
       - "8083:8083"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/iamsso_mfa
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/iamsso_mfa?sslmode=disable
       SPRING_DATASOURCE_USERNAME: app
       SPRING_DATASOURCE_PASSWORD: app
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:19092
@@ -84,7 +84,7 @@ services:
     ports:
       - "8085:8085"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/iamsso_audit
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/iamsso_audit?sslmode=disable
       SPRING_DATASOURCE_USERNAME: app
       SPRING_DATASOURCE_PASSWORD: app
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:19092
@@ -148,7 +148,7 @@ services:
     ports:
       - "8087:8087"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/vacation_portal
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/vacation_portal?sslmode=disable
       SPRING_DATASOURCE_USERNAME: app
       SPRING_DATASOURCE_PASSWORD: app
     depends_on:
