@@ -16,15 +16,15 @@ import java.util.UUID
 class AuthEventPublisher(
     private val kafka: KafkaTemplate<String, Any>,
 ) {
-    fun publishLoginSuccess(userId: UUID, clientId: String, sessionId: String) =
+    fun publishLoginSuccess(userId: UUID, clientId: String, sessionId: String, ipAddress: String? = null) =
         kafka.send(KafkaTopics.AUTH_EVENTS, userId.toString(),
             CloudEventEnvelope(source = "auth-service", type = "auth.login-success",
-                data = LoginSuccessEvent(userId = userId, clientId = clientId, sessionId = sessionId)))
+                data = LoginSuccessEvent(userId = userId, clientId = clientId, sessionId = sessionId, ipAddress = ipAddress)))
 
-    fun publishLoginFailed(identifier: String, clientId: String, reason: String) =
+    fun publishLoginFailed(identifier: String, clientId: String, reason: String, ipAddress: String? = null) =
         kafka.send(KafkaTopics.AUTH_EVENTS, clientId,
             CloudEventEnvelope(source = "auth-service", type = "auth.login-failed",
-                data = LoginFailedEvent(identifier = identifier, clientId = clientId, reason = reason)))
+                data = LoginFailedEvent(identifier = identifier, clientId = clientId, reason = reason, ipAddress = ipAddress)))
 
     fun publishTokenIssued(userId: UUID, clientId: String, grantType: String, scopes: List<String>, sessionId: String?) =
         kafka.send(KafkaTopics.AUTH_EVENTS, userId.toString(),

@@ -29,6 +29,7 @@ data class LoginSuccessEvent(
     val clientId: String,
     val sessionId: String,
     val mfaUsed: Boolean = false,
+    val ipAddress: String? = null,
 ) : DomainEvent
 
 data class LoginFailedEvent(
@@ -37,4 +38,5 @@ data class LoginFailedEvent(
     val identifier: String,
     val clientId: String,
     val reason: String,
+    val ipAddress: String? = null,
 ) : DomainEvent

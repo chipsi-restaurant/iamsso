@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.servlet.view.RedirectView
 import jakarta.servlet.http.Cookie
+import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import java.util.UUID
 
@@ -49,6 +50,7 @@ class MfaChallengeController(
     fun verifyChallenge(
         @RequestParam("challenge_id") challengeId: String,
         @RequestParam("mfa_code") mfaCode: String,
+        request: HttpServletRequest,
         response: HttpServletResponse,
     ): RedirectView {
         val challenge = mfaChallengeService.getAndDelete(challengeId)
@@ -84,7 +86,7 @@ class MfaChallengeController(
             sessionId = session.sessionId,
         ))
 
-        authEventPublisher.publishLoginSuccess(challenge.userId, authRequest.clientId, session.sessionId)
+        authEventPublisher.publishLoginSuccess(challenge.userId, authRequest.clientId, session.sessionId, request.remoteAddr)
 
         val location = buildString {
             append("${authRequest.redirectUri}?code=$code")

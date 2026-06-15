@@ -123,7 +123,7 @@ class AuthorizationController(
                    else userServiceClient.getByUsername(username))
             ?: return run {
                 val newId = resaveRequest(authRequest)
-                authEventPublisher.publishLoginFailed(username, authRequest.clientId, "invalid_credentials")
+                authEventPublisher.publishLoginFailed(username, authRequest.clientId, "invalid_credentials", request.remoteAddr)
                 RedirectView("/login?auth_request_id=$newId&error=invalid_credentials")
             }
 
@@ -136,7 +136,7 @@ class AuthorizationController(
         if (creds == null || !creds.valid) {
             val newId = resaveRequest(authRequest)
             val reason = if (creds?.lockedUntil != null) "account_locked" else "invalid_credentials"
-            authEventPublisher.publishLoginFailed(username, authRequest.clientId, reason)
+            authEventPublisher.publishLoginFailed(username, authRequest.clientId, reason, request.remoteAddr)
             return RedirectView("/login?auth_request_id=$newId&error=$reason")
         }
 
@@ -180,7 +180,7 @@ class AuthorizationController(
             )
         )
 
-        authEventPublisher.publishLoginSuccess(user.id, authRequest.clientId, session.sessionId)
+        authEventPublisher.publishLoginSuccess(user.id, authRequest.clientId, session.sessionId, request.remoteAddr)
 
         val location = buildString {
             append("${authRequest.redirectUri}?code=$code")

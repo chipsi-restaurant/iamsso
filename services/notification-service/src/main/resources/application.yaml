@@ -27,6 +27,11 @@ spring:
     mode: HTML
     encoding: UTF-8
 
+management:
+  health:
+    mail:
+      enabled: false
+
 app:
   mail:
     from: ${MAIL_USERNAME:noreply@iamsso.local}
